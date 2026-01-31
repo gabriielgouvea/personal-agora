@@ -1,6 +1,22 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from "@prisma/client";
 
 const prismaClientSingleton = () => {
+  const dbUrl =
+    process.env.DATABASE_URL ??
+    process.env.POSTGRES_PRISMA_URL ??
+    process.env.POSTGRES_URL ??
+    process.env.POSTGRES_URL_NON_POOLING ??
+    process.env.POSTGRES_URL_NO_SSL ??
+    process.env.POSTGRES_URL_NON_POOLING_NO_SSL;
+
+  if (dbUrl) {
+    return new PrismaClient({
+      datasources: {
+        db: { url: dbUrl },
+      },
+    });
+  }
+
   return new PrismaClient();
 };
 
