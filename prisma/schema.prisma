@@ -1,0 +1,34 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url = env("POSTGRES_PRISMA_URL") // uses connection pooling
+  directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
+}
+
+model PersonalTrainer {
+  id                    String   @id @default(uuid())
+  name                  String
+  dateOfBirth           DateTime
+  gender                String 
+  studentGenderPreference String 
+  
+  academies             String 
+  
+  residentialAvailable  Boolean
+  cref                  String   @unique
+  crefValidity          DateTime
+  
+  whatsapp              String
+  email                 String
+  instagram             String?
+  contactConsent        Boolean
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
