@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Check, Loader2, Dumbbell, AlertCircle, User, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { UploadButton } from "@/lib/uploadthing";
+import { UploadDropzone } from "@/lib/uploadthing";
 
 // Função para converter DD/MM/YYYY para YYYY-MM-DD
 const convertDate = (dateStr: string) => {
@@ -136,16 +136,20 @@ export default function RegistrationForm() {
         {/* Foto de Perfil - Ajustado para Responsividade */}
         <div>
             <label className="block text-sm font-medium text-zinc-300 mb-2">Foto de Perfil</label>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-zinc-900 border border-zinc-700 rounded-lg">
-                <div className="relative w-20 h-20 bg-zinc-800 rounded-full overflow-hidden border-2 border-zinc-700 flex items-center justify-center shrink-0">
+            <div className="flex flex-col sm:flex-row items-center gap-6 p-6 bg-zinc-900 border border-zinc-700 rounded-xl relative overflow-hidden">
+                 {/* Fundo decorativo sutil */}
+                 <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+
+                <div className="relative w-28 h-28 bg-zinc-800 rounded-full overflow-hidden border-4 border-zinc-800 shadow-xl flex items-center justify-center shrink-0 group">
                     {imageUrl ? (
-                        <img src={imageUrl} alt="Foto de perfil" className="w-full h-full object-cover" />
+                        <img src={imageUrl} alt="Foto de perfil" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                     ) : (
-                        <User className="w-8 h-8 text-zinc-500" />
+                        <User className="w-10 h-10 text-zinc-500" />
                     )}
                 </div>
-                <div className="flex-1 w-full">
-                    <UploadButton
+                
+                <div className="flex-1 w-full text-center sm:text-left">
+                    <UploadDropzone
                         endpoint="imageUploader"
                         onClientUploadComplete={(res) => {
                             if (res && res[0]) {
@@ -157,23 +161,19 @@ export default function RegistrationForm() {
                             alert(`ERRO! ${error.message}`);
                         }}
                         appearance={{
-                            button: "bg-zinc-800 text-zinc-200 text-sm py-2 px-6 hover:bg-zinc-700 transition w-full sm:w-auto rounded-full flex items-center gap-2",
-                            allowedContent: "hidden"
+                            container: "border-2 border-dashed border-zinc-700 bg-zinc-900/50 hover:bg-zinc-800/50 transition duration-300 rounded-lg p-6 cursor-pointer w-full flex flex-col items-center justify-center gap-2 max-w-sm mx-auto sm:mx-0",
+                            label: "text-zinc-400 text-sm font-medium hover:text-yellow-500 transition-colors",
+                            allowedContent: "text-zinc-600 text-xs",
+                            button: "bg-yellow-500 text-black font-bold text-xs py-2 px-4 rounded-full mt-2 hover:bg-yellow-400 transition cursor-pointer"
                         }}
                         content={{
-                            button({ ready }) {
-                                if (ready) return (
-                                    <>
-                                        <Plus className="w-4 h-4" />
-                                        Fazer Upload Foto de Perfil
-                                    </>
-                                );
-                                return "Carregando...";
-                            }
+                            label: "Arraste sua foto ou clique aqui",
+                            allowedContent: "Max 4MB (JPG, PNG)",
+                            button: "Selecionar Arquivo"
                         }}
                     />
-                    <p className="text-xs text-zinc-500 mt-2 leading-relaxed">
-                        Escolha uma foto profissional. Essa será a primeira impressão do seu aluno.
+                     <p className="text-xs text-zinc-500 mt-4 leading-relaxed max-w-sm mx-auto sm:mx-0">
+                        A foto é o seu cartão de visita. Escolha uma imagem com boa iluminação e aparência profissional.
                     </p>
                 </div>
             </div>

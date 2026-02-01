@@ -27,7 +27,7 @@ export default function LandingPage() {
             
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-xs font-bold uppercase tracking-widest mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
-                Em breve em Alphaville
+                LANÇAMENTO NOS PRÓXIMOS DIAS
             </div>
 
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter text-white mb-6 uppercase italic leading-[0.9] md:leading-[0.85] animate-in fade-in zoom-in duration-1000">
@@ -36,7 +36,7 @@ export default function LandingPage() {
             </h1>
 
             <p className="text-lg md:text-2xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed font-light animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
-                A primeira plataforma exclusiva que conecta alunos de alta performance aos melhores Personal Trainers da região.
+                Plataforma que conecta alunos em tempo real a você, Personal Trainer da região de Alphaville.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
@@ -61,9 +61,9 @@ export default function LandingPage() {
                     <div className="w-12 h-12 bg-zinc-800 rounded-lg flex items-center justify-center text-yellow-500 mb-6 group-hover:scale-110 transition-transform">
                         <Users className="w-6 h-6" />
                     </div>
-                    <h3 className="text-xl font-bold text-white mb-3">Conexão Direta</h3>
+                    <h3 className="text-xl font-bold text-white mb-3">Conexão em Tempo Real</h3>
                     <p className="text-zinc-400 leading-relaxed">
-                        Alunos qualificados procuram você pelo seu perfil, especialidade e local de atendimento. Sem intermediários.
+                        O aluno solicita um treino e você é notificado na hora. Se estiver disponível, aceite e conecte-se imediatamente.
                     </p>
                 </div>
 
@@ -72,9 +72,9 @@ export default function LandingPage() {
                     <div className="w-12 h-12 bg-zinc-800 rounded-lg flex items-center justify-center text-yellow-500 mb-6 group-hover:scale-110 transition-transform">
                         <Trophy className="w-6 h-6" />
                     </div>
-                    <h3 className="text-xl font-bold text-white mb-3">Exclusividade</h3>
+                    <h3 className="text-xl font-bold text-white mb-3">Liberdade Profissional</h3>
                     <p className="text-zinc-400 leading-relaxed">
-                        Focado na região de Alphaville e arredores. Esteja onde o público de alta renda está procurando.
+                        Atenda treinos avulsos imediatos ou feche planos mensais. Você define o valor da sua aula, sem interferência da plataforma.
                     </p>
                 </div>
 
@@ -83,9 +83,9 @@ export default function LandingPage() {
                     <div className="w-12 h-12 bg-zinc-800 rounded-lg flex items-center justify-center text-yellow-500 mb-6 group-hover:scale-110 transition-transform">
                         <CheckCircle2 className="w-6 h-6" />
                     </div>
-                    <h3 className="text-xl font-bold text-white mb-3">Perfil Verificado</h3>
+                    <h3 className="text-xl font-bold text-white mb-3">Exclusividade e Segurança</h3>
                     <p className="text-zinc-400 leading-relaxed">
-                        Selo de verificação para profissionais com CREF ativo, aumentando sua autoridade e confiança.
+                        Focado na região de Alphaville. Selo de verificação para profissionais com CREF ativo, garantindo autoridade e confiança.
                     </p>
                 </div>
             </div>
