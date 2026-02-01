@@ -162,9 +162,9 @@ export default function RegistrationForm() {
                         }}
                         appearance={{
                             container: "border-2 border-dashed border-zinc-700 bg-zinc-900/50 hover:bg-zinc-800/50 transition duration-300 rounded-lg p-6 cursor-pointer w-full flex flex-col items-center justify-center gap-2 max-w-sm mx-auto sm:mx-0",
-                            label: "text-zinc-400 text-sm font-medium hover:text-yellow-500 transition-colors",
-                            allowedContent: "text-zinc-600 text-xs",
-                            button: "bg-yellow-500 text-black font-bold text-xs py-2 px-4 rounded-full mt-2 hover:bg-yellow-400 transition cursor-pointer"
+                            label: "text-zinc-400 text-sm font-medium hover:text-yellow-500 transition-colors pointer-events-none",
+                            allowedContent: "text-zinc-600 text-xs pointer-events-none",
+                            button: "bg-yellow-500 text-black font-bold text-xs py-2 px-4 rounded-full mt-2 hover:bg-yellow-400 transition cursor-pointer pointer-events-none"
                         }}
                         content={{
                             label: "Arraste sua foto ou clique aqui",
