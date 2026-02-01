@@ -25,6 +25,23 @@ const registerSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    const hasDbConfig = Boolean(
+      process.env.DATABASE_URL ||
+        process.env.POSTGRES_PRISMA_URL ||
+        process.env.POSTGRES_URL ||
+        process.env.POSTGRES_URL_NON_POOLING
+    );
+
+    if (!hasDbConfig) {
+      return NextResponse.json(
+        {
+          error:
+            "Banco de dados não configurado (variáveis de ambiente ausentes).",
+        },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
     
     // Simple validation for check
@@ -50,6 +67,28 @@ export async function POST(request: Request) {
     if (error.code === 'P2002') {
         return NextResponse.json({ error: "CREF já cadastrado." }, { status: 409 });
     }
+
+    // Common Prisma runtime errors
+    if (error.code === 'P2021' || /does not exist|relation .* does not exist/i.test(String(error.message))) {
+      return NextResponse.json(
+        {
+          error:
+            "Banco ainda não inicializado (tabelas não criadas). Finalize o setup do banco e tente novamente.",
+        },
+        { status: 503 }
+      );
+    }
+
+    if (error.code === 'P1000' || error.code === 'P1001' || error.code === 'P1002') {
+      return NextResponse.json(
+        {
+          error:
+            "Falha ao conectar no banco de dados. Verifique a variável DATABASE_URL na Vercel/Neon.",
+        },
+        { status: 503 }
+      );
+    }
+
     return NextResponse.json({ error: "Erro ao salvar o cadastro." }, { status: 500 });
   }
 }
