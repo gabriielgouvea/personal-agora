@@ -20,6 +20,7 @@ const registerSchema = z.object({
   whatsapp: z.string().min(10, "WhatsApp inválido"),
   email: z.string().email("Email inválido"),
   instagram: z.string().optional(),
+  photoUrl: z.string().optional(),
   contactConsent: z.boolean().refine(val => val === true, "É necessário autorizar o contato"),
 });
 
@@ -89,6 +90,6 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ error: "Erro ao salvar o cadastro." }, { status: 500 });
+    return NextResponse.json({ error: `Erro ao salvar o cadastro: ${error.message}` }, { status: 500 });
   }
 }

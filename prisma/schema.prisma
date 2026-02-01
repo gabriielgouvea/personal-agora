@@ -26,6 +26,7 @@ model PersonalTrainer {
   whatsapp              String
   email                 String
   instagram             String?
+  photoUrl              String?
   contactConsent        Boolean
   
   createdAt             DateTime @default(now())

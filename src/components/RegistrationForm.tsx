@@ -4,12 +4,14 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Check, Loader2, Dumbbell, AlertCircle } from "lucide-react";
+import { Check, Loader2, Dumbbell, AlertCircle, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { UploadButton } from "@/lib/uploadthing";
 
 const formSchema = z.object({
   name: z.string().min(2, "Nome é obrigatório"),
   dateOfBirth: z.string().min(1, "Data de nascimento é obrigatória"),
+  photoUrl: z.string().optional(),
   gender: z.enum(["masculino", "feminino", "outro"], { errorMap: () => ({ message: "Selecione o sexo" }) }),
   studentGenderPreference: z.enum([
     "somente_masculino",
@@ -34,8 +36,9 @@ export default function RegistrationForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [serverError, setServerError] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
 
-  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       residentialAvailable: false,
@@ -51,7 +54,7 @@ export default function RegistrationForm() {
       const response = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, photoUrl: imageUrl }),
       });
 
       const resData = await response.json();
@@ -94,6 +97,50 @@ export default function RegistrationForm() {
             placeholder="Seu nome"
           />
           {errors.name && <span className="text-red-500 text-xs mt-1">{errors.name.message}</span>}
+        </div>
+
+        {/* Foto de Perfil */}
+        <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-2">Foto de Perfil</label>
+            <div className="flex items-center gap-4 p-4 bg-zinc-900 border border-zinc-700 rounded-lg">
+                <div className="relative w-20 h-20 bg-zinc-800 rounded-full overflow-hidden border-2 border-zinc-700 flex items-center justify-center">
+                    {imageUrl ? (
+                        <img src={imageUrl} alt="Foto de perfil" className="w-full h-full object-cover" />
+                    ) : (
+                        <User className="w-8 h-8 text-zinc-500" />
+                    )}
+                </div>
+                <div className="flex-1">
+                    <UploadButton
+                        endpoint="imageUploader"
+                        onClientUploadComplete={(res) => {
+                            if (res && res[0]) {
+                                setImageUrl(res[0].url);
+                                setValue("photoUrl", res[0].url); // Atualiza o form também se tiver o campo
+                            }
+                        }}
+                        onUploadError={(error: Error) => {
+                            alert(`ERRO! ${error.message}`);
+                        }}
+                        appearance={{
+                            button: "bg-zinc-800 text-zinc-200 text-sm py-2 px-4 hover:bg-zinc-700 transition w-auto",
+                            allowedContent: "text-zinc-500 text-xs"
+                        }}
+                        content={{
+                            button({ ready }) {
+                                if (ready) return "Alterar Foto";
+                                return "Carregando...";
+                            },
+                            allowedContent({ ready, fileTypes, isUploading }) {
+                                if (!ready) return "Verificando...";
+                                if (isUploading) return "Enviando...";
+                                return "Max 4MB";
+                            },
+                        }}
+                    />
+                    <p className="text-xs text-zinc-500 mt-2">Uma boa foto aumenta suas chances de contato.</p>
+                </div>
+            </div>
         </div>
 
         {/* Whatsapp e Email */}
