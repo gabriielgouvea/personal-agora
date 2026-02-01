@@ -4,13 +4,30 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Check, Loader2, Dumbbell, AlertCircle, User } from "lucide-react";
+import { Check, Loader2, Dumbbell, AlertCircle, User, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UploadButton } from "@/lib/uploadthing";
 
+// Função para converter DD/MM/YYYY para YYYY-MM-DD
+const convertDate = (dateStr: string) => {
+    if (!dateStr) return "";
+    const [day, month, year] = dateStr.split('/');
+    if (!day || !month || !year) return "";
+    return `${year}-${month}-${day}`;
+};
+
+// Validar se é uma data válida DD/MM/YYYY
+const isValidDate = (dateStr: string) => {
+    const regex = /^\d{2}\/\d{2}\/\d{4}$/;
+    if (!regex.test(dateStr)) return false;
+    const [day, month, year] = dateStr.split('/').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.getDate() === day && date.getMonth() === month - 1 && date.getFullYear() === year;
+};
+
 const formSchema = z.object({
   name: z.string().min(2, "Nome é obrigatório"),
-  dateOfBirth: z.string().min(1, "Data de nascimento é obrigatória"),
+  dateOfBirth: z.string().refine(isValidDate, "Data inválida (DD/MM/AAAA)"),
   photoUrl: z.string().optional(),
   gender: z.enum(["masculino", "feminino", "outro"], { errorMap: () => ({ message: "Selecione o sexo" }) }),
   studentGenderPreference: z.enum([
@@ -23,7 +40,7 @@ const formSchema = z.object({
   academies: z.string().min(1, "Campo obrigatório"),
   residentialAvailable: z.boolean(),
   cref: z.string().min(6, "Mínimo 6 caracteres").max(11, "Máximo 11 caracteres"),
-  crefValidity: z.string().min(1, "Data de validade é obrigatória"),
+  crefValidity: z.string().refine(isValidDate, "Data inválida (DD/MM/AAAA)"),
   whatsapp: z.string().min(10, "Informe um número válido"),
   email: z.string().email("Informe um email válido"),
   instagram: z.string().optional(),
@@ -38,7 +55,7 @@ export default function RegistrationForm() {
   const [serverError, setServerError] = useState("");
   const [imageUrl, setImageUrl] = useState("");
 
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormValues>({
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       residentialAvailable: false,
@@ -46,15 +63,32 @@ export default function RegistrationForm() {
     }
   });
 
+  // Função para máscara de data
+  const handleDateMask = (e: React.ChangeEvent<HTMLInputElement>, name: "dateOfBirth" | "crefValidity") => {
+    let value = e.target.value.replace(/\D/g, "");
+    if (value.length > 2) value = value.slice(0, 2) + "/" + value.slice(2);
+    if (value.length > 5) value = value.slice(0, 5) + "/" + value.slice(5, 9);
+    e.target.value = value;
+    setValue(name, value, { shouldValidate: true });
+  };
+
   const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
     setServerError("");
     
+    // Converter datas para o formato ISO YYYY-MM-DD que o backend espera
+    const payload = {
+        ...data,
+        photoUrl: imageUrl,
+        dateOfBirth: convertDate(data.dateOfBirth),
+        crefValidity: convertDate(data.crefValidity),
+    };
+
     try {
       const response = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, photoUrl: imageUrl }),
+        body: JSON.stringify(payload),
       });
 
       const resData = await response.json();
@@ -123,18 +157,19 @@ export default function RegistrationForm() {
                             alert(`ERRO! ${error.message}`);
                         }}
                         appearance={{
-                            button: "bg-zinc-800 text-zinc-200 text-sm py-2 px-4 hover:bg-zinc-700 transition w-full sm:w-auto",
-                            allowedContent: "text-zinc-500 text-xs"
+                            button: "bg-zinc-800 text-zinc-200 text-sm py-2 px-6 hover:bg-zinc-700 transition w-full sm:w-auto rounded-full flex items-center gap-2",
+                            allowedContent: "hidden"
                         }}
                         content={{
                             button({ ready }) {
-                                if (ready) return "Selecionar Foto";
+                                if (ready) return (
+                                    <>
+                                        <Plus className="w-4 h-4" />
+                                        Fazer Upload Foto de Perfil
+                                    </>
+                                );
                                 return "Carregando...";
-                            },
-                            allowedContent({ ready, isUploading }) {
-                                if (isUploading) return "Enviando...";
-                                return "Max 4MB";
-                            },
+                            }
                         }}
                     />
                     <p className="text-xs text-zinc-500 mt-2 leading-relaxed">
@@ -181,8 +216,11 @@ export default function RegistrationForm() {
             <div>
                 <label className="block text-sm font-medium text-zinc-300 mb-1">Data de Nascimento</label>
                 <input
-                    type="date"
+                    type="tel"
+                    maxLength={10}
+                    placeholder="DD/MM/AAAA"
                     {...register("dateOfBirth")}
+                    onChange={(e) => handleDateMask(e, "dateOfBirth")}
                     className={cn("w-full bg-zinc-900 border border-zinc-700 rounded-md p-3 text-white focus:ring-2 focus:ring-yellow-500 outline-none transition", errors.dateOfBirth && "border-red-500")}
                 />
                 {errors.dateOfBirth && <span className="text-red-500 text-xs mt-1">{errors.dateOfBirth.message}</span>}
@@ -221,8 +259,11 @@ export default function RegistrationForm() {
             <div>
                 <label className="block text-sm font-medium text-zinc-300 mb-1">Validade do CREF</label>
                 <input
-                    type="date"
+                    type="tel"
+                    maxLength={10}
+                    placeholder="DD/MM/AAAA"
                     {...register("crefValidity")}
+                    onChange={(e) => handleDateMask(e, "crefValidity")}
                     className={cn("w-full bg-zinc-900 border border-zinc-700 rounded-md p-3 text-white focus:ring-2 focus:ring-yellow-500 outline-none transition", errors.crefValidity && "border-red-500")}
                 />
                 {errors.crefValidity && <span className="text-red-500 text-xs mt-1">{errors.crefValidity.message}</span>}

@@ -25,8 +25,15 @@ export default function CadastroPage() {
             </div>
         </div>
 
-        <footer className="mt-8 text-zinc-600 text-xs text-center">
-            &copy; {new Date().getFullYear()} Personal Agora. Todos os direitos reservados.
+        <footer className="mt-8 text-zinc-600 text-xs text-center pb-8 md:pb-0">
+            <a 
+                href="https://wa.me/5511914007287" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="hover:text-yellow-500 transition-colors uppercase tracking-widest"
+            >
+                &copy; 2026 Gabriel Gouvea • Gouvea Automações
+            </a>
         </footer>
       </div>
     </main>
