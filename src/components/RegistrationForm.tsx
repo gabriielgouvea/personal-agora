@@ -99,46 +99,47 @@ export default function RegistrationForm() {
           {errors.name && <span className="text-red-500 text-xs mt-1">{errors.name.message}</span>}
         </div>
 
-        {/* Foto de Perfil */}
+        {/* Foto de Perfil - Ajustado para Responsividade */}
         <div>
             <label className="block text-sm font-medium text-zinc-300 mb-2">Foto de Perfil</label>
-            <div className="flex items-center gap-4 p-4 bg-zinc-900 border border-zinc-700 rounded-lg">
-                <div className="relative w-20 h-20 bg-zinc-800 rounded-full overflow-hidden border-2 border-zinc-700 flex items-center justify-center">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-zinc-900 border border-zinc-700 rounded-lg">
+                <div className="relative w-20 h-20 bg-zinc-800 rounded-full overflow-hidden border-2 border-zinc-700 flex items-center justify-center shrink-0">
                     {imageUrl ? (
                         <img src={imageUrl} alt="Foto de perfil" className="w-full h-full object-cover" />
                     ) : (
                         <User className="w-8 h-8 text-zinc-500" />
                     )}
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 w-full">
                     <UploadButton
                         endpoint="imageUploader"
                         onClientUploadComplete={(res) => {
                             if (res && res[0]) {
                                 setImageUrl(res[0].url);
-                                setValue("photoUrl", res[0].url); // Atualiza o form também se tiver o campo
+                                setValue("photoUrl", res[0].url);
                             }
                         }}
                         onUploadError={(error: Error) => {
                             alert(`ERRO! ${error.message}`);
                         }}
                         appearance={{
-                            button: "bg-zinc-800 text-zinc-200 text-sm py-2 px-4 hover:bg-zinc-700 transition w-auto",
+                            button: "bg-zinc-800 text-zinc-200 text-sm py-2 px-4 hover:bg-zinc-700 transition w-full sm:w-auto",
                             allowedContent: "text-zinc-500 text-xs"
                         }}
                         content={{
                             button({ ready }) {
-                                if (ready) return "Alterar Foto";
+                                if (ready) return "Selecionar Foto";
                                 return "Carregando...";
                             },
-                            allowedContent({ ready, fileTypes, isUploading }) {
-                                if (!ready) return "Verificando...";
+                            allowedContent({ ready, isUploading }) {
                                 if (isUploading) return "Enviando...";
                                 return "Max 4MB";
                             },
                         }}
                     />
-                    <p className="text-xs text-zinc-500 mt-2">Uma boa foto aumenta suas chances de contato.</p>
+                    <p className="text-xs text-zinc-500 mt-2 leading-relaxed">
+                        Escolha uma foto profissional. Essa será a primeira impressão do seu aluno.
+                    </p>
                 </div>
             </div>
         </div>
@@ -285,10 +286,10 @@ export default function RegistrationForm() {
             />
             <div className="grid gap-1.5 leading-none">
                 <label htmlFor="contactConsent" className="text-sm font-medium text-zinc-300 cursor-pointer select-none">
-                    Autorizo o contato
+                    Termos de Uso e Privacidade
                 </label>
-                <p className="text-xs text-zinc-500">
-                    Ao marcar esta caixa, você permite que a equipe do Personal Agora entre em contato para tratar sobre o seu cadastro.
+                <p className="text-xs text-zinc-500 leading-relaxed">
+                    Autorizo a exibição do meu perfil publicamente na plataforma <strong>Personal Agora</strong>, bem como o contato da equipe para fins de gerenciamento e novidades.
                 </p>
                 {errors.contactConsent && <span className="text-red-500 text-xs mt-1">{errors.contactConsent.message}</span>}
             </div>
