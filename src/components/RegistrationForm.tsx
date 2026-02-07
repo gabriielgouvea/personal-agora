@@ -56,6 +56,7 @@ export default function RegistrationForm() {
   const [imageUrl, setImageUrl] = useState("");
   const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState<string>("");
 
   const hasUploadedImage = Boolean(imageUrl);
 
@@ -176,7 +177,14 @@ export default function RegistrationForm() {
                 <div className="flex-1 w-full text-center sm:text-left">
                     <UploadDropzone
                         endpoint="imageUploader"
+                      onBeforeUploadBegin={(files) => {
+                        setUploadError("");
+                        setUploadStatus("uploading");
+                        setUploadProgress(0);
+                        return files;
+                      }}
                       onUploadBegin={() => {
+                        setUploadError("");
                   setUploadStatus("uploading");
                   setUploadProgress(0);
                 }}
@@ -194,13 +202,13 @@ export default function RegistrationForm() {
                         }}
                         onUploadError={(error: Error) => {
                   setUploadStatus("error");
-                            alert(`ERRO! ${error.message}`);
+                          setUploadError(error.message);
                         }}
                         appearance={{
                             container: "border-2 border-dashed border-zinc-700 bg-zinc-900/50 hover:bg-zinc-800/50 transition duration-300 rounded-lg p-6 cursor-pointer w-full flex flex-col items-center justify-center gap-2 max-w-sm mx-auto sm:mx-0",
-                            label: "text-zinc-400 text-sm font-medium hover:text-yellow-500 transition-colors pointer-events-none",
-                            allowedContent: "text-zinc-600 text-xs pointer-events-none",
-                            button: "bg-yellow-500 text-black font-bold text-xs py-2 px-4 rounded-full mt-2 hover:bg-yellow-400 transition cursor-pointer pointer-events-none"
+                          label: "text-zinc-400 text-sm font-medium hover:text-yellow-500 transition-colors",
+                          allowedContent: "text-zinc-600 text-xs",
+                          button: "bg-yellow-500 text-black font-bold text-xs py-2 px-4 rounded-full mt-2 hover:bg-yellow-400 transition cursor-pointer"
                         }}
                         content={{
                   label:
@@ -214,7 +222,7 @@ export default function RegistrationForm() {
                         }}
                     />
 
-                    <div className="mt-3 flex items-center justify-center sm:justify-start gap-2 text-xs">
+                    <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-center sm:justify-start gap-2 text-xs">
                       {uploadUiState === "idle" && (
                         <>
                           <span className="text-zinc-500">Nenhuma foto enviada ainda</span>
@@ -237,6 +245,10 @@ export default function RegistrationForm() {
                           <AlertCircle className="w-4 h-4 text-red-400" />
                           <span className="text-red-300">Falha ao enviar a foto</span>
                         </>
+                      )}
+
+                      {uploadError && (
+                        <span className="text-red-400 break-words">({uploadError})</span>
                       )}
                     </div>
 
