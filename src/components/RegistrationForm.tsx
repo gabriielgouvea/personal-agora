@@ -59,6 +59,15 @@ export default function RegistrationForm() {
 
   const hasUploadedImage = Boolean(imageUrl);
 
+  const uploadUiState: "idle" | "uploading" | "success" | "error" =
+    uploadStatus === "uploading"
+      ? "uploading"
+      : hasUploadedImage
+        ? "success"
+        : uploadStatus === "error"
+          ? "error"
+          : "idle";
+
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -205,28 +214,31 @@ export default function RegistrationForm() {
                         }}
                     />
 
-              {uploadStatus !== "idle" && (
-                <div className="mt-3 flex items-center justify-center sm:justify-start gap-2 text-xs">
-                  {uploadStatus === "uploading" && (
-                    <>
-                      <Loader2 className="w-4 h-4 text-yellow-400 animate-spin" />
-                      <span className="text-zinc-400">Upload em andamento ({uploadProgress}%)</span>
-                    </>
-                  )}
-                  {(uploadStatus === "success" || (hasUploadedImage && uploadStatus !== "uploading")) && (
-                    <>
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                      <span className="text-emerald-300">Foto anexada</span>
-                    </>
-                  )}
-                  {uploadStatus === "error" && (
-                    <>
-                      <AlertCircle className="w-4 h-4 text-red-400" />
-                      <span className="text-red-300">Falha ao enviar a foto</span>
-                    </>
-                  )}
-                </div>
-              )}
+                    <div className="mt-3 flex items-center justify-center sm:justify-start gap-2 text-xs">
+                      {uploadUiState === "idle" && (
+                        <>
+                          <span className="text-zinc-500">Nenhuma foto enviada ainda</span>
+                        </>
+                      )}
+                      {uploadUiState === "uploading" && (
+                        <>
+                          <Loader2 className="w-4 h-4 text-yellow-400 animate-spin" />
+                          <span className="text-zinc-400">Upload em andamento ({uploadProgress}%)</span>
+                        </>
+                      )}
+                      {uploadUiState === "success" && (
+                        <>
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                          <span className="text-emerald-300">Foto anexada</span>
+                        </>
+                      )}
+                      {uploadUiState === "error" && (
+                        <>
+                          <AlertCircle className="w-4 h-4 text-red-400" />
+                          <span className="text-red-300">Falha ao enviar a foto</span>
+                        </>
+                      )}
+                    </div>
 
                      <p className="text-xs text-zinc-500 mt-4 leading-relaxed max-w-sm mx-auto sm:mx-0">
                         A foto é o seu cartão de visita. Escolha uma imagem com boa iluminação e aparência profissional.
