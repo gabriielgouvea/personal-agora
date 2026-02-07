@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Check, Loader2, Dumbbell, AlertCircle, User, Plus } from "lucide-react";
+import { Check, Loader2, Dumbbell, AlertCircle, User, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UploadDropzone } from "@/lib/uploadthing";
 
@@ -54,6 +54,8 @@ export default function RegistrationForm() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [serverError, setServerError] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -140,24 +142,47 @@ export default function RegistrationForm() {
                  {/* Fundo decorativo sutil */}
                  <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
-                <div className="relative w-28 h-28 bg-zinc-800 rounded-full overflow-hidden border-4 border-zinc-800 shadow-xl flex items-center justify-center shrink-0 group">
+            <div className="relative w-28 h-28 bg-zinc-800 rounded-full overflow-hidden border-4 border-zinc-800 shadow-xl flex items-center justify-center shrink-0 group">
                     {imageUrl ? (
                         <img src={imageUrl} alt="Foto de perfil" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                     ) : (
                         <User className="w-10 h-10 text-zinc-500" />
                     )}
+
+              {uploadStatus === "success" && (
+                <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-emerald-500 text-black flex items-center justify-center border-2 border-zinc-900 shadow-lg">
+                  <Check className="w-4 h-4" />
+                </div>
+              )}
+
+              {uploadStatus === "uploading" && (
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 text-yellow-400 animate-spin" />
+                </div>
+              )}
                 </div>
                 
                 <div className="flex-1 w-full text-center sm:text-left">
                     <UploadDropzone
                         endpoint="imageUploader"
+                onUploadBegin={() => {
+                  setUploadStatus("uploading");
+                  setUploadProgress(0);
+                }}
+                onUploadProgress={(p) => {
+                  setUploadStatus("uploading");
+                  setUploadProgress(p);
+                }}
                         onClientUploadComplete={(res) => {
                             if (res && res[0]) {
                                 setImageUrl(res[0].url);
                                 setValue("photoUrl", res[0].url);
+                    setUploadProgress(100);
+                    setUploadStatus("success");
                             }
                         }}
                         onUploadError={(error: Error) => {
+                  setUploadStatus("error");
                             alert(`ERRO! ${error.message}`);
                         }}
                         appearance={{
@@ -167,11 +192,40 @@ export default function RegistrationForm() {
                             button: "bg-yellow-500 text-black font-bold text-xs py-2 px-4 rounded-full mt-2 hover:bg-yellow-400 transition cursor-pointer pointer-events-none"
                         }}
                         content={{
-                            label: "Arraste sua foto ou clique aqui",
+                  label:
+                    uploadStatus === "uploading"
+                      ? `Enviando... ${uploadProgress}%`
+                      : uploadStatus === "success"
+                        ? "Foto enviada com sucesso"
+                        : "Arraste sua foto ou clique aqui",
                             allowedContent: "Max 4MB (JPG, PNG)",
-                            button: "Selecionar Arquivo"
+                  button: uploadStatus === "success" ? "Trocar Foto" : "Selecionar Arquivo"
                         }}
                     />
+
+              {uploadStatus !== "idle" && (
+                <div className="mt-3 flex items-center justify-center sm:justify-start gap-2 text-xs">
+                  {uploadStatus === "uploading" && (
+                    <>
+                      <Loader2 className="w-4 h-4 text-yellow-400 animate-spin" />
+                      <span className="text-zinc-400">Upload em andamento ({uploadProgress}%)</span>
+                    </>
+                  )}
+                  {uploadStatus === "success" && (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      <span className="text-emerald-300">Foto anexada</span>
+                    </>
+                  )}
+                  {uploadStatus === "error" && (
+                    <>
+                      <AlertCircle className="w-4 h-4 text-red-400" />
+                      <span className="text-red-300">Falha ao enviar a foto</span>
+                    </>
+                  )}
+                </div>
+              )}
+
                      <p className="text-xs text-zinc-500 mt-4 leading-relaxed max-w-sm mx-auto sm:mx-0">
                         A foto é o seu cartão de visita. Escolha uma imagem com boa iluminação e aparência profissional.
                     </p>
