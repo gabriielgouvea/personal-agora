@@ -57,6 +57,8 @@ export default function RegistrationForm() {
   const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
   const [uploadProgress, setUploadProgress] = useState(0);
 
+  const hasUploadedImage = Boolean(imageUrl);
+
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -149,7 +151,7 @@ export default function RegistrationForm() {
                         <User className="w-10 h-10 text-zinc-500" />
                     )}
 
-              {uploadStatus === "success" && (
+              {hasUploadedImage && uploadStatus !== "uploading" && (
                 <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-emerald-500 text-black flex items-center justify-center border-2 border-zinc-900 shadow-lg">
                   <Check className="w-4 h-4" />
                 </div>
@@ -165,7 +167,7 @@ export default function RegistrationForm() {
                 <div className="flex-1 w-full text-center sm:text-left">
                     <UploadDropzone
                         endpoint="imageUploader"
-                onUploadBegin={() => {
+                      onUploadBegin={() => {
                   setUploadStatus("uploading");
                   setUploadProgress(0);
                 }}
@@ -195,11 +197,11 @@ export default function RegistrationForm() {
                   label:
                     uploadStatus === "uploading"
                       ? `Enviando... ${uploadProgress}%`
-                      : uploadStatus === "success"
-                        ? "Foto enviada com sucesso"
+                              : hasUploadedImage
+                                ? "Foto enviada com sucesso"
                         : "Arraste sua foto ou clique aqui",
                             allowedContent: "Max 4MB (JPG, PNG)",
-                  button: uploadStatus === "success" ? "Trocar Foto" : "Selecionar Arquivo"
+                          button: hasUploadedImage ? "Trocar Foto" : "Selecionar Arquivo"
                         }}
                     />
 
@@ -211,7 +213,7 @@ export default function RegistrationForm() {
                       <span className="text-zinc-400">Upload em andamento ({uploadProgress}%)</span>
                     </>
                   )}
-                  {uploadStatus === "success" && (
+                  {(uploadStatus === "success" || (hasUploadedImage && uploadStatus !== "uploading")) && (
                     <>
                       <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                       <span className="text-emerald-300">Foto anexada</span>
