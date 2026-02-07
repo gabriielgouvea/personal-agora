@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Check, Loader2, Dumbbell, AlertCircle, User, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { UploadDropzone } from "@/lib/uploadthing";
+import { useUploadThing } from "@/lib/uploadthing";
 
 // Função para converter DD/MM/YYYY para YYYY-MM-DD
 const convertDate = (dateStr: string) => {
@@ -58,6 +59,8 @@ export default function RegistrationForm() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string>("");
 
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const hasUploadedImage = Boolean(imageUrl);
 
   const uploadUiState: "idle" | "uploading" | "success" | "error" =
@@ -68,6 +71,52 @@ export default function RegistrationForm() {
         : uploadStatus === "error"
           ? "error"
           : "idle";
+
+  const { startUpload } = useUploadThing("imageUploader", {
+    onBeforeUploadBegin: (files) => {
+      setUploadError("");
+      setUploadStatus("uploading");
+      setUploadProgress(0);
+      return files;
+    },
+    onUploadBegin: () => {
+      setUploadError("");
+      setUploadStatus("uploading");
+      setUploadProgress(0);
+    },
+    onUploadProgress: (p) => {
+      setUploadStatus("uploading");
+      setUploadProgress(p);
+    },
+    onClientUploadComplete: (res) => {
+      const first = res?.[0];
+      if (first?.url) {
+        setImageUrl(first.url);
+        setValue("photoUrl", first.url);
+        setUploadProgress(100);
+        setUploadStatus("success");
+      }
+    },
+    onUploadError: (e) => {
+      setUploadStatus("error");
+      // e.message is safe to show; keeps user informed about token/config errors
+      setUploadError(e.message);
+    },
+  });
+
+  const openFilePicker = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleSelectedFiles = async (files: File[]) => {
+    if (!files.length) return;
+    try {
+      await startUpload(files);
+    } finally {
+      // allow selecting the same file again
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -175,52 +224,53 @@ export default function RegistrationForm() {
                 </div>
                 
                 <div className="flex-1 w-full text-center sm:text-left">
-                    <UploadDropzone
-                        endpoint="imageUploader"
-                      onBeforeUploadBegin={(files) => {
-                        setUploadError("");
-                        setUploadStatus("uploading");
-                        setUploadProgress(0);
-                        return files;
-                      }}
-                      onUploadBegin={() => {
-                        setUploadError("");
-                  setUploadStatus("uploading");
-                  setUploadProgress(0);
-                }}
-                onUploadProgress={(p) => {
-                  setUploadStatus("uploading");
-                  setUploadProgress(p);
-                }}
-                        onClientUploadComplete={(res) => {
-                            if (res && res[0]) {
-                                setImageUrl(res[0].url);
-                                setValue("photoUrl", res[0].url);
-                    setUploadProgress(100);
-                    setUploadStatus("success");
-                            }
-                        }}
-                        onUploadError={(error: Error) => {
-                  setUploadStatus("error");
-                          setUploadError(error.message);
-                        }}
-                        appearance={{
-                            container: "border-2 border-dashed border-zinc-700 bg-zinc-900/50 hover:bg-zinc-800/50 transition duration-300 rounded-lg p-6 cursor-pointer w-full flex flex-col items-center justify-center gap-2 max-w-sm mx-auto sm:mx-0",
-                          label: "text-zinc-400 text-sm font-medium hover:text-yellow-500 transition-colors",
-                          allowedContent: "text-zinc-600 text-xs",
-                          button: "bg-yellow-500 text-black font-bold text-xs py-2 px-4 rounded-full mt-2 hover:bg-yellow-400 transition cursor-pointer"
-                        }}
-                        content={{
-                  label:
-                    uploadStatus === "uploading"
-                      ? `Enviando... ${uploadProgress}%`
-                              : hasUploadedImage
-                                ? "Foto enviada com sucesso"
-                        : "Arraste sua foto ou clique aqui",
-                            allowedContent: "Max 4MB (JPG, PNG)",
-                          button: hasUploadedImage ? "Trocar Foto" : "Selecionar Arquivo"
-                        }}
-                    />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files ?? []);
+                      void handleSelectedFiles(files);
+                    }}
+                  />
+
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={openFilePicker}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        openFilePicker();
+                      }
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const files = Array.from(e.dataTransfer.files ?? []).filter((f) =>
+                        f.type.startsWith("image/")
+                      );
+                      void handleSelectedFiles(files.slice(0, 1));
+                    }}
+                    className="border-2 border-dashed border-zinc-700 bg-zinc-900/50 hover:bg-zinc-800/50 transition duration-300 rounded-lg p-6 cursor-pointer w-full flex flex-col items-center justify-center gap-2 max-w-sm mx-auto sm:mx-0 outline-none focus:ring-2 focus:ring-yellow-500"
+                  >
+                    <div className="text-zinc-400 text-sm font-medium hover:text-yellow-500 transition-colors">
+                      {uploadUiState === "uploading"
+                        ? `Enviando... ${uploadProgress}%`
+                        : hasUploadedImage
+                          ? "Foto enviada com sucesso"
+                          : "Arraste sua foto ou clique aqui"}
+                    </div>
+                    <div className="text-zinc-600 text-xs">Max 4MB (JPG, PNG)</div>
+                    <div className="bg-yellow-500 text-black font-bold text-xs py-2 px-4 rounded-full mt-2 hover:bg-yellow-400 transition">
+                      {hasUploadedImage ? "Trocar Foto" : "Selecionar Arquivo"}
+                    </div>
+                  </div>
 
                     <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-center sm:justify-start gap-2 text-xs">
                       {uploadUiState === "idle" && (
