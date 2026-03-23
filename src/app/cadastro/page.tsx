@@ -1,40 +1,65 @@
-import RegistrationForm from "@/components/RegistrationForm";
+import Link from "next/link";
+import { ArrowLeft, ArrowRight, Users, Dumbbell } from "lucide-react";
 
 export default function CadastroPage() {
   return (
-    <main className="min-h-screen bg-black selection:bg-yellow-500 selection:text-black relative overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute top-0 left-0 w-full h-96 bg-yellow-600/10 blur-[100px] rounded-full -translate-y-1/2"></div>
-      
-      <div className="relative z-10 container mx-auto px-4 py-10 flex flex-col items-center justify-center min-h-screen">
-        
-        <div className="w-full max-w-2xl bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
-            {/* Header */}
-            <div className="bg-zinc-900/50 p-8 text-center border-b border-zinc-800">
-                <h1 className="text-2xl md:text-3xl font-extrabold tracking-tighter text-white mb-1 uppercase italic">
-                    Cadastro de <span className="text-yellow-500">Profissional</span>
-                </h1>
-                <p className="text-zinc-500 text-xs uppercase tracking-widest mt-2">
-                    ETAPA ÚNICA
-                </p>
-            </div>
+    <main className="min-h-screen bg-black text-white flex items-center justify-center px-6 selection:bg-yellow-500 selection:text-black">
+      <div className="w-full max-w-2xl">
+        <Link href="/" className="block text-center mb-10">
+          <span className="text-2xl font-bold italic uppercase tracking-tighter">
+            Personal <span className="text-yellow-500">Agora</span>
+          </span>
+        </Link>
 
-            {/* Form Container */}
-            <div className="p-5 md:p-8">
-                <RegistrationForm />
-            </div>
+        <h1 className="text-3xl md:text-4xl font-black uppercase italic tracking-tight text-center mb-3">
+          Criar <span className="text-yellow-500">Conta</span>
+        </h1>
+        <p className="text-zinc-400 text-center mb-10">Selecione como você quer usar a plataforma</p>
+
+        <div className="grid md:grid-cols-2 gap-6">
+          <Link
+            href="/cadastro/aluno"
+            className="group p-8 rounded-2xl bg-zinc-900/60 border border-zinc-800 hover:border-yellow-500/30 transition-all text-left"
+          >
+            <Users className="w-10 h-10 text-yellow-500 mb-4 group-hover:scale-110 transition-transform" />
+            <h2 className="text-xl font-bold mb-2">Sou Aluno</h2>
+            <p className="text-zinc-400 text-sm mb-4">Quero encontrar um personal trainer na minha região.</p>
+            <span className="inline-flex items-center gap-1 text-yellow-500 text-sm font-semibold group-hover:gap-2 transition-all">
+              Continuar <ArrowRight className="w-4 h-4" />
+            </span>
+          </Link>
+
+          <Link
+            href="/cadastro/personal"
+            className="group p-8 rounded-2xl bg-zinc-900/60 border border-zinc-800 hover:border-yellow-500/30 transition-all text-left"
+          >
+            <Dumbbell className="w-10 h-10 text-yellow-500 mb-4 group-hover:scale-110 transition-transform" />
+            <h2 className="text-xl font-bold mb-2">Sou Personal</h2>
+            <p className="text-zinc-400 text-sm mb-4">Quero receber alunos e lotar minha agenda.</p>
+            <span className="inline-flex items-center gap-1 text-yellow-500 text-sm font-semibold group-hover:gap-2 transition-all">
+              Continuar <ArrowRight className="w-4 h-4" />
+            </span>
+          </Link>
         </div>
 
-        <footer className="mt-8 text-zinc-600 text-xs text-center pb-8 md:pb-0">
-            <a 
-                href="https://wa.me/5511914007287" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="hover:text-yellow-500 transition-colors uppercase tracking-widest"
-            >
-                &copy; 2026 Gabriel Gouvea • Gouvea Automações
-            </a>
-        </footer>
+        <div className="mt-8 text-center">
+          <p className="text-zinc-500 text-sm">
+            Já tem conta?{" "}
+            <Link href="/login" className="text-yellow-500 hover:text-yellow-400 font-semibold transition">
+              Entrar
+            </Link>
+          </p>
+        </div>
+
+        <div className="mt-6 text-center">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-zinc-500 hover:text-yellow-500 text-sm transition"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Voltar para home
+          </Link>
+        </div>
       </div>
     </main>
   );

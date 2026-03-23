@@ -34,6 +34,9 @@ export default function LandingPage() {
             <Link href="/personal" className="hidden sm:block text-sm font-medium text-zinc-400 hover:text-white transition">
               Sou Personal
             </Link>
+            <Link href="/login" className="text-sm font-medium px-4 py-1.5 rounded-full border border-zinc-700 text-zinc-300 hover:border-yellow-500 hover:text-white transition">
+              Entrar
+            </Link>
           </nav>
         </div>
       </header>

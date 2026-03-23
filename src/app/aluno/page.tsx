@@ -258,10 +258,10 @@ export default function AlunoPage() {
             direto pelo celular.
           </p>
           <Link
-            href="/"
+            href="/cadastro/aluno"
             className="inline-flex items-center gap-2 px-8 py-4 bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-lg rounded-full transition-all hover:scale-105 active:scale-95"
           >
-            Voltar para a Home
+            Criar Minha Conta
             <ArrowRight className="w-5 h-5" />
           </Link>
         </div>

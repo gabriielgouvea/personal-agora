@@ -65,7 +65,7 @@ export default function PersonalPage() {
           </p>
 
           <Link
-            href="/cadastro"
+            href="/cadastro/personal"
             className="group inline-flex items-center gap-2 px-8 py-4 bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-lg rounded-full transition-all hover:scale-105 active:scale-95"
           >
             Fazer Pré-Cadastro Gratuito
@@ -316,7 +316,7 @@ export default function PersonalPage() {
             Cadastre-se gratuitamente e esteja entre os primeiros personais da plataforma em Alphaville.
           </p>
           <Link
-            href="/cadastro"
+            href="/cadastro/personal"
             className="group inline-flex items-center gap-2 px-8 py-4 bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-lg rounded-full transition-all hover:scale-105 active:scale-95"
           >
             Fazer Pré-Cadastro Gratuito
