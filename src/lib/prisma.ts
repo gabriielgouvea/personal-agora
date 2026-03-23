@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 
-const prismaClientSingleton = () => {
+const prismaClientSingleton = (): PrismaClient => {
   const dbUrl =
     process.env.DATABASE_URL ??
     process.env.POSTGRES_PRISMA_URL ??
@@ -22,7 +22,7 @@ const prismaClientSingleton = () => {
 
 declare global {
   // eslint-disable-next-line no-var
-  var prisma: undefined | PrismaClient;
+  var prisma: undefined | ReturnType<typeof prismaClientSingleton>;
 }
 
 const prisma: PrismaClient = globalThis.prisma ?? prismaClientSingleton();
