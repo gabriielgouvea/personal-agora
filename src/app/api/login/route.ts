@@ -46,7 +46,16 @@ export async function POST(request: Request) {
       tipo: user.tipo,
     });
   } catch (error: unknown) {
-    console.error("Erro no login:", error);
+    const err = error as { code?: string; message?: string };
+    console.error("Erro no login:", err);
+
+    if (err.code === "P2021" || /does not exist|relation.*does not exist/i.test(String(err.message))) {
+      return NextResponse.json(
+        { error: "Sistema em manutenção. Tente novamente em alguns minutos." },
+        { status: 503 }
+      );
+    }
+
     return NextResponse.json(
       { error: "Erro interno. Tente novamente." },
       { status: 500 }
