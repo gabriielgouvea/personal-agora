@@ -37,6 +37,7 @@ model PersonalTrainer {
 model User {
   id             String   @id @default(uuid())
   tipo           String   // "aluno" | "personal"
+  status         String   @default("ativo") // "pendente" | "ativo" | "suspenso" | "rejeitado"
   nome           String
   sobrenome      String
   email          String   @unique
@@ -61,6 +62,27 @@ model User {
   experiencia    String?
   tempoTreino    String?
   avatarUrl      String?
+
+  // Campos específicos de personal
+  cref             String?
+  validadeCref     String?
+  formacao         String?
+  rg               String?
+  fotoCrefUrl      String?
+  selfieUrl        String?
+  disponivelEmCasa Boolean @default(false)
+  valorAproximado  String?
+  tipoChavePix     String?
+  chavePix         String?
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+}
+
+model Admin {
+  id        String   @id @default(uuid())
+  nome      String
+  email     String   @unique
+  senha     String
+  createdAt DateTime @default(now())
 }
