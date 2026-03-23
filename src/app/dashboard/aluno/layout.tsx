@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   User,
   Settings,
@@ -16,24 +16,41 @@ const NAV_ITEMS = [
   { label: "Início", href: "/dashboard/aluno" },
 ];
 
+interface UserSession {
+  nome: string;
+  sobrenome: string;
+  email: string;
+  avatarUrl?: string;
+}
+
 export default function DashboardAlunoLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [user, setUser] = useState<UserSession | null>(null);
 
-  // TODO: puxar dados reais do usuário autenticado
-  const user = {
-    nome: "Gabriel",
-    sobrenome: "Gouvea",
-    email: "gabriel@email.com",
-    avatar: "", // URL da foto
-  };
+  // Buscar sessão do usuário
+  useEffect(() => {
+    fetch("/api/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data) {
+          router.replace("/login");
+          return;
+        }
+        setUser(data);
+      })
+      .catch(() => router.replace("/login"));
+  }, [router]);
 
-  const initials = `${user.nome[0]}${user.sobrenome[0]}`.toUpperCase();
+  const initials = user
+    ? `${user.nome[0]}${user.sobrenome[0]}`.toUpperCase()
+    : "";
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -43,6 +60,20 @@ export default function DashboardAlunoLayout({
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  async function handleLogout() {
+    setMenuOpen(false);
+    await fetch("/api/logout", { method: "POST" });
+    router.replace("/login");
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -81,10 +112,10 @@ export default function DashboardAlunoLayout({
               className="flex items-center gap-2 group"
             >
               <div className="relative w-9 h-9 rounded-full overflow-hidden bg-zinc-800 border-2 border-zinc-700 group-hover:border-yellow-500/50 transition flex items-center justify-center">
-                {user.avatar ? (
+                {user.avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={user.avatar}
+                    src={user.avatarUrl}
                     alt={user.nome}
                     className="w-full h-full object-cover"
                   />
@@ -108,10 +139,10 @@ export default function DashboardAlunoLayout({
                 <div className="p-4 border-b border-zinc-800">
                   <div className="flex items-center gap-3">
                     <div className="relative w-10 h-10 rounded-full overflow-hidden bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center group">
-                      {user.avatar ? (
+                      {user.avatarUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
-                          src={user.avatar}
+                          src={user.avatarUrl}
                           alt={user.nome}
                           className="w-full h-full object-cover"
                         />
@@ -158,11 +189,7 @@ export default function DashboardAlunoLayout({
 
                 <div className="border-t border-zinc-800 py-1">
                   <button
-                    onClick={() => {
-                      setMenuOpen(false);
-                      // TODO: logout real
-                      window.location.href = "/login";
-                    }}
+                    onClick={handleLogout}
                     className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-zinc-800 hover:text-red-300 transition w-full"
                   >
                     <LogOut className="w-4 h-4" />

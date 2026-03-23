@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 
 export default function LoginPage() {
@@ -10,6 +11,7 @@ export default function LoginPage() {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -19,11 +21,25 @@ export default function LoginPage() {
       return;
     }
     setLoading(true);
-    // TODO: integrar com API de autenticação
-    setTimeout(() => {
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, senha }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Erro ao fazer login.");
+        setLoading(false);
+        return;
+      }
+      // Redirecionar para o dashboard por tipo
+      const dest = data.tipo === "personal" ? "/dashboard/personal" : "/dashboard/aluno";
+      router.push(dest);
+    } catch {
+      setError("Erro de conexão. Tente novamente.");
       setLoading(false);
-      setError("Login ainda não está disponível. Em breve!");
-    }, 1000);
+    }
   }
 
   return (

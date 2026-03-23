@@ -1,8 +1,22 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
 export default function DashboardAlunoPage() {
+  const [nome, setNome] = useState("");
+
+  useEffect(() => {
+    fetch("/api/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.nome) setNome(data.nome);
+      });
+  }, []);
+
   return (
     <div className="container mx-auto px-6 py-12">
       <h1 className="text-3xl font-black uppercase italic tracking-tight mb-2">
-        Olá, <span className="text-yellow-500">Gabriel</span> 👋
+        Olá, <span className="text-yellow-500">{nome || "..."}</span> 👋
       </h1>
       <p className="text-zinc-400 mb-10">
         Bem-vindo à plataforma. Em breve você poderá buscar personais aqui.

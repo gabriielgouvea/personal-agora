@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -12,6 +13,7 @@ import {
   Loader2,
   X,
   Search,
+  AlertTriangle,
 } from "lucide-react";
 import PasswordField from "@/components/PasswordField";
 import {
@@ -100,6 +102,12 @@ export default function CadastroAlunoPage() {
   const [done, setDone] = useState(false);
   const [loadingCep, setLoadingCep] = useState(false);
   const [phoneError, setPhoneError] = useState("");
+  const [apiError, setApiError] = useState("");
+  const [duplicateInfo, setDuplicateInfo] = useState<{
+    field: string;
+    message: string;
+  } | null>(null);
+  const router = useRouter();
 
   /* academia search */
   const [acSearch, setAcSearch] = useState("");
@@ -156,9 +164,32 @@ export default function CadastroAlunoPage() {
 
   /* ── Submit ── */
   async function onSubmit(data: FormData) {
-    // TODO: enviar para API
-    console.log("aluno", data);
-    setDone(true);
+    setApiError("");
+    setDuplicateInfo(null);
+    try {
+      const res = await fetch("/api/cadastro/aluno", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const json = await res.json();
+
+      if (!res.ok) {
+        if (json.error === "duplicate") {
+          setDuplicateInfo({ field: json.field, message: json.message });
+          // Voltar pro step onde o campo duplicado está
+          if (json.field === "email" || json.field === "telefone") setStep(0);
+          if (json.field === "cpf") setStep(1);
+          return;
+        }
+        setApiError(json.error || "Erro ao criar conta.");
+        return;
+      }
+
+      setDone(true);
+    } catch {
+      setApiError("Erro de conexão. Tente novamente.");
+    }
   }
 
   /* ── CEP auto-fill ── */
@@ -214,15 +245,15 @@ export default function CadastroAlunoPage() {
             Cadastro realizado!
           </h1>
           <p className="text-zinc-400 mb-8">
-            Em breve você terá acesso completo à plataforma para encontrar o personal ideal.
+            Sua conta foi criada com sucesso. Vamos te levar para o painel!
           </p>
-          <Link
-            href="/"
+          <button
+            onClick={() => router.push("/dashboard/aluno")}
             className="inline-flex items-center gap-2 px-6 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-full transition hover:scale-105 active:scale-95"
           >
-            Voltar para Home
+            Ir para o Painel
             <ArrowRight className="w-4 h-4" />
-          </Link>
+          </button>
         </div>
       </main>
     );
@@ -266,6 +297,34 @@ export default function CadastroAlunoPage() {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          {/* ── Alertas ── */}
+          {duplicateInfo && (
+            <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl animate-in fade-in duration-300">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm text-yellow-200 font-medium">
+                    {duplicateInfo.message}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // TODO: implementar recuperação de conta
+                      alert("Em breve! Estamos trabalhando na recuperação de conta. 🚀");
+                    }}
+                    className="text-yellow-500 text-sm font-bold hover:text-yellow-400 mt-2 underline underline-offset-2 transition"
+                  >
+                    Clique aqui para recuperar sua conta →
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          {apiError && (
+            <div className="mb-6 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+              <p className="text-red-400 text-sm">{apiError}</p>
+            </div>
+          )}
           {/* ╔══════════ STEP 1 — Conta ══════════╗ */}
           {step === 0 && (
             <div className="space-y-5 animate-in fade-in duration-300">

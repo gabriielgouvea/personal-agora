@@ -32,3 +32,34 @@ model PersonalTrainer {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 }
+
+model User {
+  id             String   @id @default(uuid())
+  tipo           String   // "aluno" | "personal"
+  nome           String
+  sobrenome      String
+  email          String   @unique
+  senha          String
+  telefone       String   @unique
+  isWhatsapp     Boolean  @default(false)
+  isTelefone     Boolean  @default(false)
+  dataNascimento String?
+  sexo           String?
+  cpf            String   @unique
+  cep            String?
+  rua            String?
+  bairro         String?
+  cidade         String?
+  estado         String?
+  numero         String?
+  complemento    String?
+  esportes       String?  // JSON array
+  academias      String?  // JSON array
+  temWellhub     Boolean  @default(false)
+  temTotalPass   Boolean  @default(false)
+  experiencia    String?
+  tempoTreino    String?
+  avatarUrl      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
