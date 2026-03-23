@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Camera,
   Save,
@@ -9,41 +9,77 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { maskPhone, maskCEP, maskCPF, maskDate } from "@/lib/masks";
+import { useUploadThing } from "@/lib/uploadthing";
 
 const inputCls =
   "w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-yellow-500 transition";
 const labelCls = "block text-sm font-medium text-zinc-400 mb-1.5";
 
-export default function MinhaContaPage() {
-  // TODO: puxar dados reais do usuário autenticado
-  const [form, setForm] = useState({
-    nome: "Gabriel",
-    sobrenome: "Gouvea",
-    email: "gabriel@email.com",
-    telefone: "(11) 91234-5678",
-    isWhatsapp: true,
-    isTelefone: false,
-    dataNascimento: "15/03/1995",
-    sexo: "masculino",
-    cpf: "123.456.789-00",
-    cep: "06454-000",
-    rua: "Alameda Rio Negro",
-    bairro: "Alphaville Industrial",
-    cidade: "Barueri",
-    estado: "SP",
-    numero: "500",
-    complemento: "Sala 12",
-    avatar: "",
-  });
+interface UserData {
+  nome: string;
+  sobrenome: string;
+  email: string;
+  telefone: string;
+  isWhatsapp: boolean;
+  isTelefone: boolean;
+  dataNascimento: string;
+  sexo: string;
+  cpf: string;
+  cep: string;
+  rua: string;
+  bairro: string;
+  cidade: string;
+  estado: string;
+  numero: string;
+  complemento: string;
+  avatarUrl: string;
+}
 
+export default function MinhaContaPage() {
+  const router = useRouter();
+  const [form, setForm] = useState<UserData | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const avatarRef = useRef<HTMLInputElement>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const { startUpload } = useUploadThing("imageUploader");
+
+  // Carregar dados reais do usuário
+  useEffect(() => {
+    fetch("/api/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data) return;
+        setForm({
+          nome: data.nome || "",
+          sobrenome: data.sobrenome || "",
+          email: data.email || "",
+          telefone: data.telefone || "",
+          isWhatsapp: data.isWhatsapp ?? false,
+          isTelefone: data.isTelefone ?? false,
+          dataNascimento: data.dataNascimento || "",
+          sexo: data.sexo || "",
+          cpf: data.cpf || "",
+          cep: data.cep || "",
+          rua: data.rua || "",
+          bairro: data.bairro || "",
+          cidade: data.cidade || "",
+          estado: data.estado || "",
+          numero: data.numero || "",
+          complemento: data.complemento || "",
+          avatarUrl: data.avatarUrl || "",
+        });
+        if (data.avatarUrl) setAvatarPreview(data.avatarUrl);
+      });
+  }, []);
 
   function update(field: string, value: string | boolean) {
-    setForm((f) => ({ ...f, [field]: value }));
+    setForm((f) => (f ? { ...f, [field]: value } : f));
     setSaved(false);
   }
 
@@ -51,20 +87,61 @@ export default function MinhaContaPage() {
     const file = e.target.files?.[0];
     if (file) {
       setAvatarPreview(URL.createObjectURL(file));
+      setAvatarFile(file);
       setSaved(false);
-      // TODO: upload real do avatar
     }
   }
 
   async function handleSave() {
+    if (!form) return;
     setSaving(true);
-    // TODO: enviar para API
-    await new Promise((r) => setTimeout(r, 800));
+
+    let avatarUrl = form.avatarUrl;
+
+    // Upload avatar se mudou
+    if (avatarFile) {
+      setUploadingAvatar(true);
+      try {
+        const res = await startUpload([avatarFile]);
+        if (res?.[0]?.url) {
+          avatarUrl = res[0].url;
+        }
+      } catch (err) {
+        console.error("Erro no upload:", err);
+      }
+      setUploadingAvatar(false);
+    }
+
+    // Salvar no banco
+    try {
+      await fetch("/api/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, avatarUrl }),
+      });
+      setSaved(true);
+      setAvatarFile(null);
+
+      // Redirecionar para a tela inicial após 1.5s
+      setTimeout(() => {
+        router.push("/dashboard/aluno");
+      }, 1500);
+    } catch (err) {
+      console.error("Erro ao salvar:", err);
+    }
+
     setSaving(false);
-    setSaved(true);
   }
 
-  const initials = `${form.nome[0]}${form.sobrenome[0]}`.toUpperCase();
+  if (!form) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const initials = `${form.nome[0] || "?"}${form.sobrenome[0] || "?"}`.toUpperCase();
 
   return (
     <div className="container mx-auto px-6 py-12 max-w-2xl">
@@ -83,15 +160,20 @@ export default function MinhaContaPage() {
       <div className="flex items-center gap-6 mb-10">
         <div className="relative group">
           <div className="w-20 h-20 rounded-full overflow-hidden bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center">
-            {avatarPreview || form.avatar ? (
+            {avatarPreview ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={avatarPreview || form.avatar}
+                src={avatarPreview}
                 alt="Avatar"
                 className="w-full h-full object-cover"
               />
             ) : (
               <span className="text-2xl font-bold text-zinc-400">{initials}</span>
+            )}
+            {uploadingAvatar && (
+              <div className="absolute inset-0 rounded-full bg-black/70 flex items-center justify-center">
+                <Loader2 className="w-6 h-6 text-yellow-500 animate-spin" />
+              </div>
             )}
           </div>
           <button
@@ -323,7 +405,10 @@ export default function MinhaContaPage() {
           className="px-8 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-full transition hover:scale-[1.02] active:scale-95 disabled:opacity-50 flex items-center gap-2"
         >
           {saving ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              {uploadingAvatar ? "Enviando foto..." : "Salvando..."}
+            </>
           ) : saved ? (
             <>
               <Check className="w-5 h-5" /> Salvo!
@@ -336,7 +421,7 @@ export default function MinhaContaPage() {
         </button>
         {saved && (
           <span className="text-green-400 text-sm">
-            Suas informações foram atualizadas.
+            Suas informações foram atualizadas. Voltando...
           </span>
         )}
       </div>
