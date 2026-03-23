@@ -1,21 +1,26 @@
 /**
- * Ensures DATABASE_URL is set for Prisma CLI commands.
- * Vercel + Neon integration provides POSTGRES_PRISMA_URL / POSTGRES_URL
- * but Prisma schema expects DATABASE_URL.
+ * Ensures POSTGRES_PRISMA_URL and POSTGRES_URL_NON_POOLING are set
+ * for Prisma CLI commands during Vercel build.
+ * Creates a .env file so `prisma generate` and `prisma db push` work.
  */
 const fs = require("fs");
 
-const url =
-  process.env.DATABASE_URL ||
+const pooling =
   process.env.POSTGRES_PRISMA_URL ||
   process.env.POSTGRES_URL ||
-  process.env.POSTGRES_URL_NON_POOLING;
+  process.env.DATABASE_URL;
 
-if (url && !process.env.DATABASE_URL) {
-  fs.writeFileSync(".env", `DATABASE_URL="${url}"\n`);
-  console.log("✅ .env created with DATABASE_URL from Vercel/Neon vars");
-} else if (url) {
-  console.log("✅ DATABASE_URL already set");
+const direct =
+  process.env.POSTGRES_URL_NON_POOLING ||
+  pooling;
+
+const lines = [];
+if (pooling) lines.push(`POSTGRES_PRISMA_URL="${pooling}"`);
+if (direct) lines.push(`POSTGRES_URL_NON_POOLING="${direct}"`);
+
+if (lines.length) {
+  fs.writeFileSync(".env", lines.join("\n") + "\n");
+  console.log("✅ .env created for Prisma CLI");
 } else {
   console.warn("⚠️  No database URL found in environment variables");
 }
