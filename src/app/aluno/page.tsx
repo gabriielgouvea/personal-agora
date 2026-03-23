@@ -270,12 +270,12 @@ export default function AlunoPage() {
       {/* ───────── FOOTER ───────── */}
       <footer className="py-8 bg-black border-t border-zinc-900 text-center">
         <a
-          href="https://wa.me/5511914007287"
+          href="https://www.instagram.com/ascoracompany"
           target="_blank"
           rel="noopener noreferrer"
           className="text-zinc-600 text-xs hover:text-yellow-500 transition-colors uppercase tracking-widest"
         >
-          &copy; 2026 Gabriel Gouvea &bull; Gouvea Automações
+          &copy; 2026 Ascora Company
         </a>
       </footer>
     </main>
