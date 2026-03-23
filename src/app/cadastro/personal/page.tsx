@@ -12,12 +12,11 @@ import {
   Loader2,
   X,
   Search,
-  Eye,
-  EyeOff,
   Upload,
   Camera,
   FileText,
 } from "lucide-react";
+import PasswordField from "@/components/PasswordField";
 import {
   maskPhone,
   maskCEP,
@@ -51,6 +50,7 @@ const schema = z
     sobrenome: z.string().min(2, "Mínimo 2 caracteres"),
     email: z.string().email("E-mail inválido"),
     senha: z.string().min(6, "Mínimo 6 caracteres"),
+    confirmarSenha: z.string().min(1, "Confirme sua senha"),
     telefone: z.string().min(14, "Telefone inválido"),
     isWhatsapp: z.boolean(),
     isTelefone: z.boolean(),
@@ -87,12 +87,16 @@ const schema = z
   .refine((d) => d.isWhatsapp || d.isTelefone, {
     message: "Marque pelo menos uma opção",
     path: ["isWhatsapp"],
+  })
+  .refine((d) => d.senha === d.confirmarSenha, {
+    message: "As senhas não coincidem",
+    path: ["confirmarSenha"],
   });
 
 type FormData = z.infer<typeof schema>;
 
 const STEP_FIELDS: (keyof FormData)[][] = [
-  ["nome", "sobrenome", "email", "senha", "telefone"],
+  ["nome", "sobrenome", "email", "senha", "confirmarSenha", "telefone"],
   ["dataNascimento", "sexo", "cpf", "cep", "numero"],
   ["cref", "validadeCref", "formacao", "rg"],
   ["valorAproximado"],
@@ -111,7 +115,6 @@ export default function CadastroPersonalPage() {
   const [step, setStep] = useState(0);
   const [done, setDone] = useState(false);
   const [loadingCep, setLoadingCep] = useState(false);
-  const [showPw, setShowPw] = useState(false);
   const [phoneError, setPhoneError] = useState("");
 
   /* uploads locais (preview) */
@@ -301,25 +304,14 @@ export default function CadastroPersonalPage() {
                 {errors.email && <p className={errorCls}>{errors.email.message}</p>}
               </div>
 
-              <div>
-                <label className={labelCls}>Senha</label>
-                <div className="relative">
-                  <input
-                    {...register("senha")}
-                    type={showPw ? "text" : "password"}
-                    className={`${inputCls} pr-12`}
-                    placeholder="Mínimo 6 caracteres"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPw(!showPw)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition"
-                  >
-                    {showPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-                {errors.senha && <p className={errorCls}>{errors.senha.message}</p>}
-              </div>
+              <PasswordField
+                value={w.senha || ""}
+                confirmValue={w.confirmarSenha || ""}
+                onChange={(v) => setValue("senha", v, { shouldValidate: !!errors.senha })}
+                onConfirmChange={(v) => setValue("confirmarSenha", v, { shouldValidate: !!errors.confirmarSenha })}
+                error={errors.senha?.message}
+                confirmError={errors.confirmarSenha?.message}
+              />
 
               <div>
                 <label className={labelCls}>Telefone</label>
