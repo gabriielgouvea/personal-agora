@@ -5,8 +5,9 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Personal Agora - Cadastro de Profissionais",
-  description: "Cadastro de personal trainers para a plataforma Personal Agora - Ironberg Alphaville",
+  title: "Personal Agora — Encontre seu Personal Trainer em Alphaville",
+  description:
+    "Plataforma que conecta alunos a personal trainers verificados na região de Alphaville. Busque por academia ou região, agende aulas avulsas ou planos mensais com pagamento seguro.",
 };
 
 export default function RootLayout({
