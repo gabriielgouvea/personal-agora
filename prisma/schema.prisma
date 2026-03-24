@@ -87,10 +87,19 @@ model Admin {
   createdAt DateTime @default(now())
 }
 
+model Rede {
+  id        String     @id @default(uuid())
+  nome      String     @unique
+  academias Academia[]
+  createdAt DateTime   @default(now())
+}
+
 model Academia {
   id        String   @id @default(uuid())
   nome      String
   endereco  String
+  redeId    String?
+  rede      Rede?    @relation(fields: [redeId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
