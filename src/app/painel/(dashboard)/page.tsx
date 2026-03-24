@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, Dumbbell, Clock, TrendingUp } from "lucide-react";
+import { Users, Dumbbell, Clock, TrendingUp, Building2 } from "lucide-react";
 
 interface Stats {
   totalAlunos: number;
@@ -11,6 +11,7 @@ interface Stats {
   alunosHomens: number;
   personaisMulheres: number;
   personaisHomens: number;
+  totalAcademias: number;
   totalUsuarios: number;
   faturamentoTotal: number;
   faturamentoMes: number;
@@ -111,6 +112,13 @@ export default function PainelDashboard() {
           icon={Clock}
           accent="text-orange-400"
           sub="Personais aguardando"
+        />
+        <StatCard
+          label="Academias"
+          value={stats.totalAcademias}
+          icon={Building2}
+          accent="text-purple-400"
+          sub="Cadastradas"
         />
         <StatCard
           label="Faturamento"

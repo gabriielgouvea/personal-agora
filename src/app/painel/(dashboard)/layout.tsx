@@ -9,6 +9,7 @@ import {
   Dumbbell,
   DollarSign,
   ShieldCheck,
+  Building2,
   LogOut,
   Menu,
   X,
@@ -24,6 +25,7 @@ const navItems = [
   { href: "/painel", label: "Dashboard", icon: LayoutDashboard },
   { href: "/painel/alunos", label: "Alunos", icon: Users },
   { href: "/painel/personais", label: "Personais", icon: Dumbbell },
+  { href: "/painel/academias", label: "Academias", icon: Building2 },
   { href: "/painel/faturamento", label: "Faturamento", icon: DollarSign },
   { href: "/painel/admins", label: "Administradores", icon: ShieldCheck },
 ];
