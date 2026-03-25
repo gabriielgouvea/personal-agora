@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Gift, Plus, Trash2, Copy, Check, Search } from "lucide-react";
+import { Gift, Plus, Trash2, Check, Search } from "lucide-react";
 
 interface Convite {
   id: string;
@@ -18,8 +18,8 @@ export default function ConvitesPage() {
   const [showForm, setShowForm] = useState(false);
   const [cpf, setCpf] = useState("");
   const [creating, setCreating] = useState(false);
-  const [copied, setCopied] = useState<string | null>(null);
   const [busca, setBusca] = useState("");
+  const [createError, setCreateError] = useState("");
 
   useEffect(() => {
     fetchConvites();
@@ -34,6 +34,7 @@ export default function ConvitesPage() {
   async function handleCreate() {
     if (!cpf.trim()) return;
     setCreating(true);
+    setCreateError("");
     const res = await fetch("/api/admin/convites", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -43,6 +44,9 @@ export default function ConvitesPage() {
       setCpf("");
       setShowForm(false);
       fetchConvites();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      setCreateError(err.error || "Erro ao criar convite");
     }
     setCreating(false);
   }
@@ -53,12 +57,6 @@ export default function ConvitesPage() {
     fetchConvites();
   }
 
-  function copyCode(codigo: string) {
-    navigator.clipboard.writeText(codigo);
-    setCopied(codigo);
-    setTimeout(() => setCopied(null), 2000);
-  }
-
   function maskCpfDisplay(cpf: string) {
     const c = cpf.replace(/\D/g, "");
     if (c.length !== 11) return cpf;
@@ -67,7 +65,6 @@ export default function ConvitesPage() {
 
   const filtered = convites.filter(
     (c) =>
-      c.codigo.toLowerCase().includes(busca.toLowerCase()) ||
       c.cpf.includes(busca.replace(/\D/g, ""))
   );
 
@@ -115,11 +112,12 @@ export default function ConvitesPage() {
               disabled={creating || !cpf.trim()}
               className="px-5 py-2.5 bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-sm rounded-lg transition disabled:opacity-50"
             >
-              {creating ? "Criando..." : "Gerar Código"}
+              {creating ? "Criando..." : "Criar Convite"}
             </button>
           </div>
+          {createError && <p className="text-red-400 text-xs mt-2">{createError}</p>}
           <p className="text-xs text-zinc-600 mt-2">
-            O código será gerado automaticamente e vinculado ao CPF informado.
+            O convite será vinculado ao CPF. Na hora do cadastro, o personal só precisa digitar o CPF para validar.
           </p>
         </div>
       )}
@@ -131,7 +129,7 @@ export default function ConvitesPage() {
           <input
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar por código ou CPF..."
+            placeholder="Buscar por CPF..."
             className="w-full pl-10 pr-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-lg text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-yellow-500"
           />
         </div>
@@ -163,22 +161,9 @@ export default function ConvitesPage() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <code className={`text-sm font-mono font-bold ${c.usado ? "text-zinc-500" : "text-white"}`}>
-                        {c.codigo}
-                      </code>
-                      {!c.usado && (
-                        <button
-                          onClick={() => copyCode(c.codigo)}
-                          className="p-1 hover:bg-zinc-800 rounded transition"
-                          title="Copiar código"
-                        >
-                          {copied === c.codigo ? (
-                            <Check className="w-3.5 h-3.5 text-green-500" />
-                          ) : (
-                            <Copy className="w-3.5 h-3.5 text-zinc-500" />
-                          )}
-                        </button>
-                      )}
+                      <span className={`text-sm font-mono font-bold ${c.usado ? "text-zinc-500" : "text-white"}`}>
+                        CPF: {maskCpfDisplay(c.cpf)}
+                      </span>
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                         c.usado
                           ? "bg-zinc-800 text-zinc-500"
@@ -188,7 +173,7 @@ export default function ConvitesPage() {
                       </span>
                     </div>
                     <p className="text-xs text-zinc-500 mt-1">
-                      CPF: {maskCpfDisplay(c.cpf)} • Criado em{" "}
+                      Criado em{" "}
                       {new Date(c.createdAt).toLocaleDateString("pt-BR")}
                     </p>
                   </div>

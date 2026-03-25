@@ -25,13 +25,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "CPF é obrigatório" }, { status: 400 });
   }
 
-  // Gerar código único
-  const codigo = `INV-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
+  const cpfLimpo = cpf.replace(/\D/g, "");
+
+  // Verificar se já existe convite para esse CPF
+  const existing = await prisma.convite.findFirst({
+    where: { cpf: cpfLimpo, usado: false },
+  });
+  if (existing) {
+    return NextResponse.json({ error: "Já existe um convite ativo para esse CPF" }, { status: 409 });
+  }
 
   const convite = await prisma.convite.create({
     data: {
-      codigo,
-      cpf: cpf.replace(/\D/g, ""),
+      codigo: cpfLimpo,
+      cpf: cpfLimpo,
     },
   });
 

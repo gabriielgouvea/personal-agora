@@ -18,7 +18,10 @@ import {
   FileText,
   Gift,
   Ticket,
-  Info,
+  MapPin,
+  Rocket,
+  Star,
+  Crown,
 } from "lucide-react";
 import PasswordField from "@/components/PasswordField";
 import {
@@ -26,6 +29,7 @@ import {
   maskCEP,
   maskCPF,
   maskDate,
+  maskMonthYear,
   unmask,
   fetchAddressByCep,
 } from "@/lib/masks";
@@ -46,22 +50,6 @@ const MODALIDADES = [
   "Emagrecimento",
   "Hipertrofia",
   "Preparação Física",
-];
-
-/* ── Regiões sugeridas ── */
-const REGIOES = [
-  "Alphaville",
-  "Tamboré",
-  "Barueri",
-  "Santana de Parnaíba",
-  "Osasco",
-  "Cotia",
-  "Granja Viana",
-  "Pinheiros",
-  "Vila Olímpia",
-  "Moema",
-  "Jardins",
-  "Itaim Bibi",
 ];
 
 /* ── Schema ── */
@@ -99,7 +87,8 @@ const schema = z
     preferenciaGeneroAluno: z.string().min(1, "Selecione uma opção"),
     disponivelEmCasa: z.boolean(),
     valorAproximado: z.string().min(1, "Informe um valor"),
-    /* 5 — Financeiro */
+    /* 5 — Plano & Financeiro */
+    plano: z.string().min(1, "Selecione um plano"),
     tipoChavePix: z.string().min(1, "Selecione"),
     chavePix: z.string().min(3, "Informe a chave"),
     confirmaPixProprio: z.literal(true, {
@@ -128,10 +117,10 @@ const STEP_FIELDS: (keyof FormData)[][] = [
   ["dataNascimento", "sexo", "cpf", "cep", "numero"],
   ["cref", "validadeCref", "formacao", "rg"],
   ["modalidades", "regioes", "preferenciaGeneroAluno", "valorAproximado"],
-  ["tipoChavePix", "chavePix", "confirmaPixProprio", "aceitaTaxa"],
+  ["plano", "tipoChavePix", "chavePix", "confirmaPixProprio", "aceitaTaxa"],
 ];
 
-const STEP_LABELS = ["Conta", "Pessoal", "Documentos", "Trabalho", "Financeiro"];
+const STEP_LABELS = ["Conta", "Pessoal", "Documentos", "Trabalho", "Plano & Financeiro"];
 
 /* ── Estilos ── */
 const inputCls =
@@ -177,12 +166,23 @@ function CadastroPersonalContent() {
   const regRef = useRef<HTMLDivElement>(null);
 
   /* convite / cupom */
-  const [showConvite, setShowConvite] = useState(searchParams.get("convite") === "1");
+  const [showConvite, setShowConvite] = useState(false);
   const [showCupom, setShowCupom] = useState(searchParams.get("cupom") === "1");
-  const [conviteInput, setConviteInput] = useState("");
-  const [cupomInput, setCupomInput] = useState("");
   const [conviteStatus, setConviteStatus] = useState<{ valido?: boolean; erro?: string; msg?: string }>({});
+  const [cupomInput, setCupomInput] = useState("");
   const [cupomStatus, setCupomStatus] = useState<{ valido?: boolean; erro?: string; descricao?: string }>({});
+
+  /* convite pre-screen */
+  const [preScreen, setPreScreen] = useState(searchParams.get("convite") === "1");
+  const [convitePreCpf, setConvitePreCpf] = useState("");
+  const [convitePreStatus, setConvitePreStatus] = useState<{ valido?: boolean; erro?: string }>({});
+  const [conviteValidated, setConviteValidated] = useState(false);
+  const [convitePreLoading, setConvitePreLoading] = useState(false);
+
+  /* região search — Google Places */
+  const [regSuggestions, setRegSuggestions] = useState<{ description: string }[]>([]);
+  const [regLoading, setRegLoading] = useState(false);
+  const regDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
     register,
@@ -208,6 +208,7 @@ function CadastroPersonalContent() {
       complemento: "",
       codigoConvite: "",
       codigoCupom: "",
+      plano: "",
       confirmaPixProprio: false as unknown as true,
       aceitaTaxa: false as unknown as true,
     },
@@ -253,9 +254,10 @@ function CadastroPersonalContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...data,
+          plano: data.plano,
           modalidades: data.modalidades,
           regioes: data.regioes,
-          codigoConvite: conviteStatus.valido ? conviteInput : undefined,
+          codigoConvite: conviteValidated ? "cpf" : (conviteStatus.valido ? "cpf" : undefined),
           codigoCupom: cupomStatus.valido ? cupomInput : undefined,
         }),
       });
@@ -324,16 +326,31 @@ function CadastroPersonalContent() {
     if (!cur.includes(r)) setValue("regioes", [...cur, r], { shouldValidate: true });
     setRegSearch("");
     setRegOpen(false);
+    setRegSuggestions([]);
   }
   function removeRegiao(r: string) {
     setValue("regioes", (w.regioes || []).filter((x) => x !== r), { shouldValidate: true });
   }
-  const filteredReg = REGIOES.filter(
-    (r) =>
-      regSearch.length >= 1 &&
-      r.toLowerCase().includes(regSearch.toLowerCase()) &&
-      !(w.regioes || []).includes(r)
-  );
+  function handleRegSearchChange(value: string) {
+    setRegSearch(value);
+    setRegOpen(true);
+    if (regDebounceRef.current) clearTimeout(regDebounceRef.current);
+    if (value.length < 3) {
+      setRegSuggestions([]);
+      return;
+    }
+    regDebounceRef.current = setTimeout(async () => {
+      setRegLoading(true);
+      try {
+        const res = await fetch(`/api/places/autocomplete?input=${encodeURIComponent(value)}`);
+        const data = await res.json();
+        setRegSuggestions(Array.isArray(data) ? data : []);
+      } catch {
+        setRegSuggestions([]);
+      }
+      setRegLoading(false);
+    }, 300);
+  }
 
   /* ── Modalidade toggle ── */
   function toggleModalidade(m: string) {
@@ -347,26 +364,52 @@ function CadastroPersonalContent() {
 
   /* ── Validar convite ── */
   async function validarConvite() {
-    if (!conviteInput.trim() || !w.cpf) {
-      setConviteStatus({ erro: "Preencha o CPF no passo 2 antes de validar o convite" });
+    if (!w.cpf || unmask(w.cpf).length !== 11) {
+      setConviteStatus({ erro: "Preencha o CPF no passo 2 antes de validar" });
       return;
     }
     try {
       const res = await fetch("/api/convite/validar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ codigo: conviteInput, cpf: w.cpf }),
+        body: JSON.stringify({ cpf: w.cpf }),
       });
       const data = await res.json();
       if (res.ok) {
         setConviteStatus({ valido: true, msg: data.beneficio });
-        setValue("codigoConvite", conviteInput);
+        setValue("codigoConvite", "cpf");
+        setValue("plano", "pro");
       } else {
         setConviteStatus({ erro: data.error });
       }
     } catch {
       setConviteStatus({ erro: "Erro ao validar convite" });
     }
+  }
+
+  /* ── Validar convite (pré-tela) ── */
+  async function validarConvitePre() {
+    if (!convitePreCpf || unmask(convitePreCpf).length !== 11) {
+      setConvitePreStatus({ erro: "CPF inválido" });
+      return;
+    }
+    setConvitePreLoading(true);
+    try {
+      const res = await fetch("/api/convite/validar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cpf: convitePreCpf }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setConvitePreStatus({ valido: true });
+      } else {
+        setConvitePreStatus({ erro: data.error });
+      }
+    } catch {
+      setConvitePreStatus({ erro: "Erro ao validar convite" });
+    }
+    setConvitePreLoading(false);
   }
 
   /* ── Validar cupom ── */
@@ -395,6 +438,105 @@ function CadastroPersonalContent() {
     if (!file) return null;
     if (file.type.startsWith("image/")) return URL.createObjectURL(file);
     return null;
+  }
+
+  /* ── Pré-tela: Convite ── */
+  if (preScreen && !conviteValidated) {
+    return (
+      <main className="min-h-screen bg-black text-white flex items-center justify-center px-6 selection:bg-yellow-500 selection:text-black">
+        <div className="max-w-md w-full">
+          <div className="text-center mb-8">
+            <Gift className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-black uppercase italic tracking-tight mb-2">
+              Validar <span className="text-yellow-500">Convite</span>
+            </h1>
+            <p className="text-zinc-400 text-sm">
+              Digite seu CPF para verificar se você tem um convite e ganhar{" "}
+              <strong className="text-white">2 meses grátis no Plano Pro</strong>.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className={labelCls}>CPF</label>
+              <input
+                value={convitePreCpf}
+                onChange={(e) => {
+                  setConvitePreCpf(maskCPF(e.target.value));
+                  setConvitePreStatus({});
+                }}
+                className={inputCls}
+                placeholder="000.000.000-00"
+              />
+            </div>
+
+            {convitePreStatus.valido && (
+              <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                <p className="text-green-400 text-sm font-medium flex items-center gap-2">
+                  <Check className="w-4 h-4" /> Convite encontrado!
+                </p>
+                <p className="text-zinc-300 text-xs mt-2 leading-relaxed">
+                  Parabéns! Você ganhou 2 meses de mensalidade grátis. Durante esses 2 meses
+                  você irá usufruir dos benefícios do Plano Pro. Após o teste, você escolhe qual
+                  vai ser.
+                </p>
+              </div>
+            )}
+            {convitePreStatus.erro && (
+              <p className="text-red-400 text-sm">{convitePreStatus.erro}</p>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              {!convitePreStatus.valido ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={validarConvitePre}
+                    disabled={convitePreLoading}
+                    className="flex-1 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-full transition disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {convitePreLoading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      "Verificar CPF"
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreScreen(false)}
+                    className="px-6 py-3 border border-zinc-700 text-zinc-300 rounded-full font-semibold hover:border-zinc-500 transition"
+                  >
+                    Não tenho convite
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConviteValidated(true);
+                    setPreScreen(false);
+                    setValue("cpf", convitePreCpf);
+                    setValue("plano", "pro");
+                    setValue("codigoConvite", "cpf");
+                    setConviteStatus({ valido: true, msg: "2 meses grátis no plano Pro" });
+                  }}
+                  className="flex-1 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-full transition flex items-center justify-center gap-2"
+                >
+                  Continuar cadastro
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            <div className="text-center pt-2">
+              <Link href="/personal" className="text-zinc-500 hover:text-zinc-400 text-xs transition">
+                ← Voltar para a página
+              </Link>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   /* ── Sucesso ── */
@@ -630,8 +772,9 @@ function CadastroPersonalContent() {
                   <label className={labelCls}>Validade do CREF</label>
                   <input
                     {...register("validadeCref")}
-                    type="month"
                     className={inputCls}
+                    placeholder="MM/AAAA"
+                    onChange={(e) => setValue("validadeCref", maskMonthYear(e.target.value))}
                   />
                   {errors.validadeCref && <p className={errorCls}>{errors.validadeCref.message}</p>}
                 </div>
@@ -785,30 +928,33 @@ function CadastroPersonalContent() {
                   <input
                     type="text"
                     value={regSearch}
-                    onChange={(e) => {
-                      setRegSearch(e.target.value);
-                      setRegOpen(true);
-                    }}
+                    onChange={(e) => handleRegSearchChange(e.target.value)}
                     onFocus={() => setRegOpen(true)}
                     className={`${inputCls} pl-10`}
-                    placeholder="Buscar região..."
+                    placeholder="Buscar região (ex: Alphaville, Moema)..."
                   />
-                  {regOpen && filteredReg.length > 0 && (
+                  {regLoading && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-yellow-500 animate-spin" />
+                  )}
+                  {regOpen && regSuggestions.length > 0 && (
                     <div className="absolute z-20 left-0 right-0 mt-1 bg-zinc-800 border border-zinc-700 rounded-lg max-h-48 overflow-y-auto shadow-xl">
-                      {filteredReg.map((r) => (
-                        <button
-                          key={r}
-                          type="button"
-                          onClick={() => addRegiao(r)}
-                          className="w-full text-left px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-700 transition"
-                        >
-                          {r}
-                        </button>
-                      ))}
+                      {regSuggestions
+                        .filter((s) => !(w.regioes || []).includes(s.description))
+                        .map((s) => (
+                          <button
+                            key={s.description}
+                            type="button"
+                            onClick={() => addRegiao(s.description)}
+                            className="w-full text-left px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-700 transition flex items-center gap-2"
+                          >
+                            <MapPin className="w-4 h-4 text-zinc-500 shrink-0" />
+                            {s.description}
+                          </button>
+                        ))}
                     </div>
                   )}
-                  {/* Opção de região customizada */}
-                  {regSearch.length >= 2 && filteredReg.length === 0 && regOpen && (
+                  {/* Manual add if no API results */}
+                  {regSearch.length >= 3 && !regLoading && regSuggestions.length === 0 && regOpen && (
                     <div className="absolute z-20 left-0 right-0 mt-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl">
                       <button
                         type="button"
@@ -953,9 +1099,153 @@ function CadastroPersonalContent() {
             </div>
           )}
 
-          {/* ╔══════════ STEP 5 — Financeiro ══════════╗ */}
+          {/* ╔══════════ STEP 5 — Plano & Financeiro ══════════╗ */}
           {step === 4 && (
             <div className="space-y-6 animate-in fade-in duration-300">
+              {/* Seleção de plano */}
+              {!conviteValidated ? (
+                <div>
+                  <label className={labelCls}>Escolha seu plano</label>
+                  <div className="grid grid-cols-3 gap-3 mt-2">
+                    {[
+                      { value: "start", label: "Start", price: "R$ 29,90/mês", Icon: Rocket },
+                      { value: "pro", label: "Pro", price: "R$ 49,90/mês", Icon: Star, recommended: true },
+                      { value: "elite", label: "Elite", price: "R$ 99,90/mês", Icon: Crown },
+                    ].map(({ value, label, price, Icon, recommended }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => setValue("plano", value, { shouldValidate: true })}
+                        className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition ${
+                          w.plano === value
+                            ? "border-yellow-500 bg-yellow-500/10"
+                            : "border-zinc-700 bg-zinc-800 hover:border-zinc-600"
+                        }`}
+                      >
+                        {recommended && (
+                          <span className="absolute -top-2 px-2 py-0.5 bg-yellow-500 text-black text-[10px] font-bold uppercase rounded-full">
+                            Recomendado
+                          </span>
+                        )}
+                        <Icon className={`w-6 h-6 ${w.plano === value ? "text-yellow-500" : "text-zinc-400"}`} />
+                        <span className={`text-sm font-bold ${w.plano === value ? "text-yellow-500" : "text-white"}`}>
+                          {label}
+                        </span>
+                        <span className="text-xs text-zinc-500">{price}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {errors.plano && <p className={errorCls}>{errors.plano.message}</p>}
+                  <Link
+                    href="/personal#planos"
+                    target="_blank"
+                    className="text-xs text-yellow-500 hover:text-yellow-400 mt-2 inline-block"
+                  >
+                    Ver benefícios de cada plano →
+                  </Link>
+                </div>
+              ) : (
+                <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                  <p className="text-green-400 text-sm font-medium flex items-center gap-2">
+                    <Check className="w-4 h-4" /> Convite aplicado — Plano Pro (2 meses grátis)
+                  </p>
+                </div>
+              )}
+
+              {/* Cupom - só para quem não usou convite */}
+              {!conviteValidated && w.plano && (
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setShowCupom(!showCupom)}
+                    className="flex items-center gap-2 text-sm text-yellow-500 hover:text-yellow-400 transition"
+                  >
+                    <Ticket className="w-4 h-4" />
+                    {showCupom ? "Esconder campo de cupom" : "Tenho um cupom de desconto"}
+                  </button>
+                  {showCupom && (
+                    <div className="mt-3 flex gap-2">
+                      <input
+                        value={cupomInput}
+                        onChange={(e) => {
+                          setCupomInput(e.target.value.toUpperCase());
+                          setCupomStatus({});
+                        }}
+                        placeholder="Código do cupom"
+                        className={`${inputCls} flex-1`}
+                      />
+                      <button
+                        type="button"
+                        onClick={validarCupom}
+                        className="px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-300 hover:border-yellow-500 transition"
+                      >
+                        Aplicar
+                      </button>
+                    </div>
+                  )}
+                  {cupomStatus.valido && (
+                    <p className="text-green-400 text-xs mt-2 flex items-center gap-1">
+                      <Check className="w-3 h-3" /> {cupomStatus.descricao}
+                    </p>
+                  )}
+                  {cupomStatus.erro && (
+                    <p className="text-red-400 text-xs mt-2">{cupomStatus.erro}</p>
+                  )}
+                </div>
+              )}
+
+              <hr className="border-zinc-800" />
+
+              {/* Convite in-form (para quem NÃO veio de ?convite=1) */}
+              {!conviteValidated && (
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!showConvite) {
+                        setShowConvite(true);
+                      } else {
+                        setShowConvite(false);
+                        setConviteStatus({});
+                      }
+                    }}
+                    className="flex items-center gap-2 text-sm text-yellow-500 hover:text-yellow-400 transition"
+                  >
+                    <Gift className="w-4 h-4" />
+                    {showConvite ? "Esconder verificação de convite" : "Tenho um convite"}
+                  </button>
+                  {showConvite && !conviteStatus.valido && (
+                    <div className="mt-3">
+                      <p className="text-xs text-zinc-500 mb-2">
+                        Vamos verificar se há um convite vinculado ao seu CPF ({w.cpf || "preencha no passo 2"}).
+                      </p>
+                      <button
+                        type="button"
+                        onClick={validarConvite}
+                        className="px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-300 hover:border-yellow-500 transition"
+                      >
+                        Verificar convite pelo CPF
+                      </button>
+                    </div>
+                  )}
+                  {conviteStatus.valido && (
+                    <div className="mt-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                      <p className="text-green-400 text-sm flex items-center gap-1">
+                        <Check className="w-3 h-3" /> {conviteStatus.msg}
+                      </p>
+                      <p className="text-zinc-400 text-xs mt-1">
+                        Seu plano foi alterado para Pro com 2 meses grátis.
+                      </p>
+                    </div>
+                  )}
+                  {conviteStatus.erro && (
+                    <p className="text-red-400 text-xs mt-2">{conviteStatus.erro}</p>
+                  )}
+                </div>
+              )}
+
+              <hr className="border-zinc-800" />
+
               <div className="p-4 rounded-lg bg-zinc-900/60 border border-zinc-800 mb-2">
                 <p className="text-sm text-zinc-400 leading-relaxed">
                   Para receber seus pagamentos, precisamos dos seus dados de PIX.
@@ -1026,91 +1316,6 @@ function CadastroPersonalContent() {
                   </span>
                 </label>
                 {errors.aceitaTaxa && <p className={`${errorCls} ml-8`}>{errors.aceitaTaxa.message}</p>}
-              </div>
-
-              {/* Convite / Cupom */}
-              <div className="border-t border-zinc-800 pt-6 space-y-4">
-                <p className="text-sm text-zinc-400 font-medium">Tem convite ou cupom de desconto? (opcional)</p>
-
-                {/* Convite */}
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => setShowConvite(!showConvite)}
-                    className="flex items-center gap-2 text-sm text-yellow-500 hover:text-yellow-400 transition"
-                  >
-                    <Gift className="w-4 h-4" />
-                    {showConvite ? "Esconder campo de convite" : "Tenho um código de convite"}
-                  </button>
-                  {showConvite && (
-                    <div className="mt-3 flex gap-2">
-                      <input
-                        value={conviteInput}
-                        onChange={(e) => {
-                          setConviteInput(e.target.value.toUpperCase());
-                          setConviteStatus({});
-                        }}
-                        placeholder="Código do convite"
-                        className={`${inputCls} flex-1`}
-                      />
-                      <button
-                        type="button"
-                        onClick={validarConvite}
-                        className="px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-300 hover:border-yellow-500 transition"
-                      >
-                        Validar
-                      </button>
-                    </div>
-                  )}
-                  {conviteStatus.valido && (
-                    <p className="text-green-400 text-xs mt-2 flex items-center gap-1">
-                      <Check className="w-3 h-3" /> {conviteStatus.msg}
-                    </p>
-                  )}
-                  {conviteStatus.erro && (
-                    <p className="text-red-400 text-xs mt-2">{conviteStatus.erro}</p>
-                  )}
-                </div>
-
-                {/* Cupom */}
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => setShowCupom(!showCupom)}
-                    className="flex items-center gap-2 text-sm text-yellow-500 hover:text-yellow-400 transition"
-                  >
-                    <Ticket className="w-4 h-4" />
-                    {showCupom ? "Esconder campo de cupom" : "Tenho um cupom de desconto"}
-                  </button>
-                  {showCupom && (
-                    <div className="mt-3 flex gap-2">
-                      <input
-                        value={cupomInput}
-                        onChange={(e) => {
-                          setCupomInput(e.target.value.toUpperCase());
-                          setCupomStatus({});
-                        }}
-                        placeholder="Código do cupom"
-                        className={`${inputCls} flex-1`}
-                      />
-                      <button
-                        type="button"
-                        onClick={validarCupom}
-                        className="px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-300 hover:border-yellow-500 transition"
-                      >
-                        Aplicar
-                      </button>
-                    </div>
-                  )}
-                  {cupomStatus.valido && (
-                    <p className="text-green-400 text-xs mt-2 flex items-center gap-1">
-                      <Check className="w-3 h-3" /> {cupomStatus.descricao}
-                    </p>
-                  )}
-                  {cupomStatus.erro && (
-                    <p className="text-red-400 text-xs mt-2">{cupomStatus.erro}</p>
-                  )}
-                </div>
               </div>
             </div>
           )}

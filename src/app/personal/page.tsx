@@ -17,7 +17,6 @@ import {
   Star,
   Crown,
   Rocket,
-  Info,
   Ticket,
   Gift,
 } from "lucide-react";
@@ -206,30 +205,51 @@ export default function PersonalPage() {
                 </p>
               </div>
               <ul className="space-y-3 flex-1 mb-8">
-                {[
-                  "Perfil visível para alunos da região",
-                  "Recebe notificações de demanda",
-                  "Pode aceitar até 10 aulas/mês",
-                  "Suporte por e-mail",
-                ].map((item) => (
-                  <li key={item} className="flex gap-2 text-sm text-zinc-300">
-                    <CheckCircle2 className="w-4 h-4 text-zinc-500 shrink-0 mt-0.5" />
-                    {item}
-                  </li>
-                ))}
+                <li className="flex gap-2 text-sm text-zinc-300">
+                  <CheckCircle2 className="w-4 h-4 text-zinc-500 shrink-0 mt-0.5" />
+                  Contratos ilimitados
+                </li>
+                <li className="flex gap-2 text-sm text-zinc-300">
+                  <CheckCircle2 className="w-4 h-4 text-zinc-500 shrink-0 mt-0.5" />
+                  12% sobre aulas/pacotes contratados e pagos no site
+                </li>
+                <li className="flex gap-2 text-sm text-zinc-300">
+                  <CheckCircle2 className="w-4 h-4 text-zinc-500 shrink-0 mt-0.5" />
+                  Perfil verificado (CREF + selfie)
+                </li>
+                <li className="flex gap-2 text-sm text-zinc-300">
+                  <CheckCircle2 className="w-4 h-4 text-zinc-500 shrink-0 mt-0.5" />
+                  Avaliações verificadas após aula
+                </li>
+                <li className="flex gap-2 text-sm text-zinc-300">
+                  <CheckCircle2 className="w-4 h-4 text-zinc-500 shrink-0 mt-0.5" />
+                  Newsletter da plataforma
+                </li>
+                <li className="flex gap-2 text-sm text-zinc-300 items-start">
+                  <CheckCircle2 className="w-4 h-4 text-zinc-500 shrink-0 mt-0.5" />
+                  <span>
+                    10% OFF em 1 landing page com a Ascora{" "}
+                    <span className="relative inline-block group/tip">
+                      <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-zinc-700 text-zinc-400 text-[10px] font-bold cursor-help leading-none">?</span>
+                      <span className="pointer-events-none group-hover/tip:pointer-events-auto invisible group-hover/tip:visible opacity-0 group-hover/tip:opacity-100 transition absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-3 rounded-lg bg-zinc-800 border border-zinc-700 text-xs text-zinc-300 leading-relaxed shadow-xl z-30">
+                        Desconto válido enquanto a assinatura estiver ativa. Limitado a 1 landing page (1 página) por personal. O desconto aplica-se ao valor final do projeto de 1 página. Itens extras podem alterar o valor final, mas o percentual de desconto se mantém.
+                      </span>
+                    </span>
+                  </span>
+                </li>
               </ul>
               <Link
                 href="/cadastro/personal"
                 className="block text-center py-3 border border-zinc-600 text-zinc-300 font-bold rounded-full hover:border-zinc-400 transition"
               >
-                Começar com Start
+                Selecionar
               </Link>
             </div>
 
             {/* Pro (destaque) */}
             <div className="relative p-8 rounded-2xl bg-gradient-to-b from-yellow-500/10 to-zinc-900/60 border-2 border-yellow-500/50 hover:border-yellow-500 transition-all flex flex-col scale-[1.02]">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-yellow-500 text-black text-xs font-black uppercase rounded-full">
-                Mais Popular
+                Recomendado
               </div>
               <div className="flex items-center gap-3 mb-4">
                 <Star className="w-8 h-8 text-yellow-500" />
@@ -242,24 +262,48 @@ export default function PersonalPage() {
                 </p>
               </div>
               <ul className="space-y-3 flex-1 mb-8">
-                {[
-                  "Tudo do Start",
-                  "Aulas ilimitadas",
-                  "Prioridade no ranking de busca",
-                  "Selo de verificação no perfil",
-                  "Suporte prioritário via WhatsApp",
-                ].map((item) => (
-                  <li key={item} className="flex gap-2 text-sm text-zinc-300">
-                    <CheckCircle2 className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
-                    {item}
-                  </li>
-                ))}
+                <li className="flex gap-2 text-sm text-zinc-300">
+                  <CheckCircle2 className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                  Contratos ilimitados
+                </li>
+                <li className="flex gap-2 text-sm text-zinc-300">
+                  <CheckCircle2 className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                  9% sobre aulas/pacotes contratados e pagos no site
+                </li>
+                <li className="flex gap-2 text-sm text-zinc-300">
+                  <CheckCircle2 className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                  Perfil verificado (CREF + selfie)
+                </li>
+                <li className="flex gap-2 text-sm text-zinc-300">
+                  <CheckCircle2 className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                  Avaliações verificadas após aula
+                </li>
+                <li className="flex gap-2 text-sm text-zinc-300">
+                  <CheckCircle2 className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                  Newsletter
+                </li>
+                <li className="flex gap-2 text-sm text-zinc-300 items-start">
+                  <CheckCircle2 className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                  <span>
+                    20% OFF em 1 landing page com a Ascora{" "}
+                    <span className="relative inline-block group/tip">
+                      <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-zinc-700 text-zinc-400 text-[10px] font-bold cursor-help leading-none">?</span>
+                      <span className="pointer-events-none group-hover/tip:pointer-events-auto invisible group-hover/tip:visible opacity-0 group-hover/tip:opacity-100 transition absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-3 rounded-lg bg-zinc-800 border border-zinc-700 text-xs text-zinc-300 leading-relaxed shadow-xl z-30">
+                        Desconto válido enquanto a assinatura estiver ativa. Limitado a 1 landing page (1 página) por personal. O desconto aplica-se ao valor final do projeto de 1 página. Itens extras podem alterar o valor final, mas o percentual de desconto se mantém.
+                      </span>
+                    </span>
+                  </span>
+                </li>
+                <li className="flex gap-2 text-sm text-zinc-300">
+                  <CheckCircle2 className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                  Especialidades: até 3
+                </li>
               </ul>
               <Link
                 href="/cadastro/personal"
                 className="block text-center py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-full transition hover:scale-[1.02] active:scale-95"
               >
-                Começar com Pro
+                Selecionar
               </Link>
             </div>
 
@@ -276,25 +320,56 @@ export default function PersonalPage() {
                 </p>
               </div>
               <ul className="space-y-3 flex-1 mb-8">
-                {[
-                  "Tudo do Pro",
-                  "Badge \"Destaque\" no perfil",
-                  "Aparece no topo das buscas",
-                  "Destaque na home para alunos",
-                  "Suporte VIP + consultoria de perfil",
-                  "Acesso a relatórios de demanda da região",
-                ].map((item) => (
-                  <li key={item} className="flex gap-2 text-sm text-zinc-300">
-                    <CheckCircle2 className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
-                    {item}
-                  </li>
-                ))}
+                <li className="flex gap-2 text-sm text-zinc-300">
+                  <CheckCircle2 className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                  Contratos ilimitados
+                </li>
+                <li className="flex gap-2 text-sm text-zinc-300">
+                  <CheckCircle2 className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                  7% sobre aulas/pacotes contratados e pagos no site
+                </li>
+                <li className="flex gap-2 text-sm text-zinc-300">
+                  <CheckCircle2 className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                  Perfil verificado (CREF + selfie)
+                </li>
+                <li className="flex gap-2 text-sm text-zinc-300">
+                  <CheckCircle2 className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                  Avaliações verificadas após aula
+                </li>
+                <li className="flex gap-2 text-sm text-zinc-300">
+                  <CheckCircle2 className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                  Newsletter
+                </li>
+                <li className="flex gap-2 text-sm text-zinc-300 items-start">
+                  <CheckCircle2 className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                  <span>
+                    40% OFF em 1 landing page com a Ascora{" "}
+                    <span className="relative inline-block group/tip">
+                      <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-zinc-700 text-zinc-400 text-[10px] font-bold cursor-help leading-none">?</span>
+                      <span className="pointer-events-none group-hover/tip:pointer-events-auto invisible group-hover/tip:visible opacity-0 group-hover/tip:opacity-100 transition absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-3 rounded-lg bg-zinc-800 border border-zinc-700 text-xs text-zinc-300 leading-relaxed shadow-xl z-30">
+                        Desconto válido enquanto a assinatura estiver ativa. Limitado a 1 landing page (1 página) por personal. O desconto aplica-se ao valor final do projeto de 1 página. Itens extras podem alterar o valor final, mas o percentual de desconto se mantém.
+                      </span>
+                    </span>
+                  </span>
+                </li>
+                <li className="flex gap-2 text-sm text-zinc-300">
+                  <CheckCircle2 className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                  Especialidades: ilimitadas
+                </li>
+                <li className="flex gap-2 text-sm text-zinc-300">
+                  <CheckCircle2 className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                  Suporte prioritário
+                </li>
+                <li className="flex gap-2 text-sm text-zinc-300">
+                  <CheckCircle2 className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                  Perfil em destaque (badge &quot;Destaque&quot;)
+                </li>
               </ul>
               <Link
                 href="/cadastro/personal"
                 className="block text-center py-3 border border-yellow-500/50 text-yellow-500 font-bold rounded-full hover:bg-yellow-500/10 transition"
               >
-                Começar com Elite
+                Selecionar
               </Link>
             </div>
           </div>
@@ -322,19 +397,6 @@ export default function PersonalPage() {
               </Link>
             </div>
           </div>
-
-          {/* Tooltip regras */}
-          <div className="mt-8 max-w-2xl mx-auto">
-            <div className="flex items-start gap-3 p-4 rounded-xl bg-zinc-900/40 border border-zinc-800">
-              <Info className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
-              <p className="text-xs text-zinc-500 leading-relaxed">
-                <strong className="text-zinc-400">Como funciona a landing page:</strong> Seu perfil fica visível para alunos
-                que buscam personal na sua região. Antes do pagamento, o aluno vê apenas seu primeiro nome, foto e descrição.
-                Contato (WhatsApp, telefone, Instagram) só é liberado após pagamento confirmado. Você define seus preços com total autonomia.
-                Perfis com CREF e selfie verificados recebem selo de confiança. Personais Elite ganham badge &quot;Destaque&quot; e prioridade máxima nas buscas.
-              </p>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -348,13 +410,13 @@ export default function PersonalPage() {
           <div className="grid sm:grid-cols-2 gap-5">
             {[
               "Planos a partir de R$ 29,90/mês — acessível para todo personal",
-              "Você define o preço da sua aula e dos planos",
-              "Recebe notificações em tempo real de alunos na sua região",
-              "Aulas avulsas imediatas e fechamento de planos mensais",
+              "Você define o preço da sua aula e dos pacotes",
               "Pagamento garantido — não precisa cobrar o aluno",
               "Dinheiro na conta em até 24h",
-              "Selo de verificação com CREF conferido",
+              "Perfil verificado com CREF + selfie",
               "Alunos chegam via tráfego pago e networking — sem esforço seu",
+              "Desconto exclusivo em landing page profissional com a Ascora",
+              "Avaliações verificadas: só quem fez aula pode avaliar",
             ].map((item) => (
               <div
                 key={item}

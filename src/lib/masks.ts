@@ -26,6 +26,12 @@ export function maskDate(value: string): string {
   return `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4)}`;
 }
 
+export function maskMonthYear(value: string): string {
+  const d = value.replace(/\D/g, "").slice(0, 6);
+  if (d.length <= 2) return d;
+  return `${d.slice(0, 2)}/${d.slice(2)}`;
+}
+
 export function unmask(value: string): string {
   return value.replace(/\D/g, "");
 }

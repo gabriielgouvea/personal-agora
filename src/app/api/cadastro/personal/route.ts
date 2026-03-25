@@ -33,6 +33,7 @@ const registerSchema = z.object({
   valorAproximado: z.string().min(1),
   tipoChavePix: z.string().min(1),
   chavePix: z.string().min(3),
+  plano: z.string().min(1),
   codigoConvite: z.string().optional(),
   codigoCupom: z.string().optional(),
 });
@@ -85,27 +86,24 @@ export async function POST(request: Request) {
     }
 
     // Processar convite
-    let plano: string | null = null;
+    let plano: string | null = data.plano || null;
     let planoAtivo = false;
     let planoInicio: Date | null = null;
     let planoFim: Date | null = null;
     let conviteUsado: string | null = null;
 
     if (data.codigoConvite) {
-      const convite = await prisma.convite.findUnique({
-        where: { codigo: data.codigoConvite },
+      const cpfLimpo = data.cpf.replace(/\D/g, "");
+      const convite = await prisma.convite.findFirst({
+        where: { cpf: cpfLimpo, usado: false },
       });
-      if (convite && !convite.usado) {
-        const cpfLimpo = data.cpf.replace(/\D/g, "");
-        const conviteCpfLimpo = convite.cpf.replace(/\D/g, "");
-        if (cpfLimpo === conviteCpfLimpo) {
+      if (convite) {
           plano = "pro";
           planoAtivo = true;
           planoInicio = new Date();
           planoFim = new Date();
           planoFim.setMonth(planoFim.getMonth() + 2);
-          conviteUsado = convite.codigo;
-        }
+          conviteUsado = convite.id;
       }
     }
 
@@ -168,7 +166,7 @@ export async function POST(request: Request) {
     // Marcar convite como usado
     if (conviteUsado) {
       await prisma.convite.update({
-        where: { codigo: conviteUsado },
+        where: { id: conviteUsado },
         data: { usado: true, usadoPor: user.id },
       });
     }
