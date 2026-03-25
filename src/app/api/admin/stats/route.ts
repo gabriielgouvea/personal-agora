@@ -15,6 +15,8 @@ export async function GET() {
     personaisMulheres,
     personaisHomens,
     totalAcademias,
+    totalConvites,
+    totalCupons,
     recentUsers,
   ] = await Promise.all([
     prisma.user.count({ where: { tipo: "aluno" } }),
@@ -25,6 +27,8 @@ export async function GET() {
     prisma.user.count({ where: { tipo: "personal", sexo: "feminino" } }),
     prisma.user.count({ where: { tipo: "personal", sexo: "masculino" } }),
     prisma.academia.count(),
+    prisma.convite.count(),
+    prisma.cupom.count(),
     prisma.user.findMany({
       orderBy: { createdAt: "desc" },
       take: 10,
@@ -50,6 +54,8 @@ export async function GET() {
     personaisMulheres,
     personaisHomens,
     totalAcademias,
+    totalConvites,
+    totalCupons,
     totalUsuarios: totalAlunos + totalPersonais,
     recentUsers,
     // Faturamento placeholder

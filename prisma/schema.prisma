@@ -74,6 +74,17 @@ model User {
   valorAproximado  String?
   tipoChavePix     String?
   chavePix         String?
+  modalidades      String?  // JSON array: ["musculação","funcional",...]
+  regioes          String?  // JSON array: ["Alphaville","Tamboré",...]
+  preferenciaGeneroAluno String? // "homens" | "mulheres" | "ambos"
+  verificado       Boolean @default(false)
+
+  // Plano
+  plano            String?  // "start" | "pro" | "elite"
+  planoAtivo       Boolean @default(false)
+  planoInicio      DateTime?
+  planoFim         DateTime?
+  conviteUsado     String?  // código do convite usado
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -102,4 +113,25 @@ model Academia {
   rede      Rede?    @relation(fields: [redeId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Convite {
+  id        String   @id @default(uuid())
+  codigo    String   @unique
+  cpf       String   // CPF de quem pode usar
+  usado     Boolean  @default(false)
+  usadoPor  String?  // userId de quem usou
+  createdAt DateTime @default(now())
+}
+
+model Cupom {
+  id          String   @id @default(uuid())
+  codigo      String   @unique
+  tipo        String   // "percentual" | "fixo"
+  valor       Float    // ex: 10 (10% ou R$10)
+  validade    DateTime?
+  limiteUsos  Int      @default(1)
+  usosAtuais  Int      @default(0)
+  ativo       Boolean  @default(true)
+  createdAt   DateTime @default(now())
 }

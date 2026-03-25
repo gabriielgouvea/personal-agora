@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -15,6 +16,9 @@ import {
   Upload,
   Camera,
   FileText,
+  Gift,
+  Ticket,
+  Info,
 } from "lucide-react";
 import PasswordField from "@/components/PasswordField";
 import {
@@ -26,20 +30,38 @@ import {
   fetchAddressByCep,
 } from "@/lib/masks";
 
-/* ── Placeholder academias ── */
-const ACADEMIAS = [
-  "Ironberg Alphaville",
-  "Ironberg Barra Funda",
-  "Ironberg São Caetano",
-  "Ironberg Pinheiros",
-  "Bluefit Alphaville",
-  "Bluefit Barueri",
-  "Smart Fit Alphaville",
-  "Smart Fit Tamboré",
-  "Bio Ritmo Alphaville",
-  "Bodytech Alphaville",
-  "Companhia Athletica Alphaville",
-  "Runner Alphaville",
+/* ── Modalidades disponíveis ── */
+const MODALIDADES = [
+  "Musculação",
+  "Funcional",
+  "Pilates",
+  "Crossfit",
+  "Yoga",
+  "Natação",
+  "Corrida",
+  "Luta / Artes Marciais",
+  "Dança",
+  "Alongamento",
+  "Reabilitação",
+  "Emagrecimento",
+  "Hipertrofia",
+  "Preparação Física",
+];
+
+/* ── Regiões sugeridas ── */
+const REGIOES = [
+  "Alphaville",
+  "Tamboré",
+  "Barueri",
+  "Santana de Parnaíba",
+  "Osasco",
+  "Cotia",
+  "Granja Viana",
+  "Pinheiros",
+  "Vila Olímpia",
+  "Moema",
+  "Jardins",
+  "Itaim Bibi",
 ];
 
 /* ── Schema ── */
@@ -72,6 +94,9 @@ const schema = z
     rg: z.string().min(5, "RG obrigatório"),
     /* 4 — Trabalho */
     academias: z.array(z.string()),
+    modalidades: z.array(z.string()).min(1, "Selecione ao menos uma modalidade"),
+    regioes: z.array(z.string()).min(1, "Selecione ao menos uma região"),
+    preferenciaGeneroAluno: z.string().min(1, "Selecione uma opção"),
     disponivelEmCasa: z.boolean(),
     valorAproximado: z.string().min(1, "Informe um valor"),
     /* 5 — Financeiro */
@@ -83,6 +108,9 @@ const schema = z
     aceitaTaxa: z.literal(true, {
       errorMap: () => ({ message: "Aceite os termos" }),
     }),
+    /* Convite/Cupom */
+    codigoConvite: z.string().optional(),
+    codigoCupom: z.string().optional(),
   })
   .refine((d) => d.isWhatsapp || d.isTelefone, {
     message: "Marque pelo menos uma opção",
@@ -99,7 +127,7 @@ const STEP_FIELDS: (keyof FormData)[][] = [
   ["nome", "sobrenome", "email", "senha", "confirmarSenha", "telefone"],
   ["dataNascimento", "sexo", "cpf", "cep", "numero"],
   ["cref", "validadeCref", "formacao", "rg"],
-  ["valorAproximado"],
+  ["modalidades", "regioes", "preferenciaGeneroAluno", "valorAproximado"],
   ["tipoChavePix", "chavePix", "confirmaPixProprio", "aceitaTaxa"],
 ];
 
@@ -112,10 +140,24 @@ const labelCls = "block text-sm font-medium text-zinc-400 mb-1.5";
 const errorCls = "text-red-400 text-xs mt-1";
 
 export default function CadastroPersonalPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-2 border-yellow-500 border-t-transparent rounded-full" />
+      </div>
+    }>
+      <CadastroPersonalContent />
+    </Suspense>
+  );
+}
+
+function CadastroPersonalContent() {
+  const searchParams = useSearchParams();
   const [step, setStep] = useState(0);
   const [done, setDone] = useState(false);
   const [loadingCep, setLoadingCep] = useState(false);
   const [phoneError, setPhoneError] = useState("");
+  const [apiError, setApiError] = useState("");
 
   /* uploads locais (preview) */
   const [fotoCref, setFotoCref] = useState<File | null>(null);
@@ -123,10 +165,24 @@ export default function CadastroPersonalPage() {
   const fotoCrefRef = useRef<HTMLInputElement>(null);
   const selfieRef = useRef<HTMLInputElement>(null);
 
-  /* academia search */
+  /* academia search — carregadas do banco */
+  const [academiasDB, setAcademiasDB] = useState<{ id: string; nome: string }[]>([]);
   const [acSearch, setAcSearch] = useState("");
   const [acOpen, setAcOpen] = useState(false);
   const acRef = useRef<HTMLDivElement>(null);
+
+  /* região search */
+  const [regSearch, setRegSearch] = useState("");
+  const [regOpen, setRegOpen] = useState(false);
+  const regRef = useRef<HTMLDivElement>(null);
+
+  /* convite / cupom */
+  const [showConvite, setShowConvite] = useState(searchParams.get("convite") === "1");
+  const [showCupom, setShowCupom] = useState(searchParams.get("cupom") === "1");
+  const [conviteInput, setConviteInput] = useState("");
+  const [cupomInput, setCupomInput] = useState("");
+  const [conviteStatus, setConviteStatus] = useState<{ valido?: boolean; erro?: string; msg?: string }>({});
+  const [cupomStatus, setCupomStatus] = useState<{ valido?: boolean; erro?: string; descricao?: string }>({});
 
   const {
     register,
@@ -141,12 +197,17 @@ export default function CadastroPersonalPage() {
       isWhatsapp: true,
       isTelefone: false,
       academias: [],
+      modalidades: [],
+      regioes: [],
+      preferenciaGeneroAluno: "",
       disponivelEmCasa: false,
       rua: "",
       bairro: "",
       cidade: "",
       estado: "",
       complemento: "",
+      codigoConvite: "",
+      codigoCupom: "",
       confirmaPixProprio: false as unknown as true,
       aceitaTaxa: false as unknown as true,
     },
@@ -154,10 +215,19 @@ export default function CadastroPersonalPage() {
 
   const w = watch();
 
-  /* fechar dropdown academia */
+  /* carregar academias do banco */
+  useEffect(() => {
+    fetch("/api/admin/academias")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => setAcademiasDB(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, []);
+
+  /* fechar dropdowns */
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (acRef.current && !acRef.current.contains(e.target as Node)) setAcOpen(false);
+      if (regRef.current && !regRef.current.contains(e.target as Node)) setRegOpen(false);
     }
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -176,9 +246,42 @@ export default function CadastroPersonalPage() {
 
   /* ── Submit ── */
   async function onSubmit(data: FormData) {
-    // TODO: enviar para API + upload de arquivos
-    console.log("personal", data, { fotoCref, selfie });
-    setDone(true);
+    setApiError("");
+    try {
+      const res = await fetch("/api/cadastro/personal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...data,
+          modalidades: data.modalidades,
+          regioes: data.regioes,
+          codigoConvite: conviteStatus.valido ? conviteInput : undefined,
+          codigoCupom: cupomStatus.valido ? cupomInput : undefined,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        setApiError(err.message || err.error || "Erro ao enviar cadastro");
+        return;
+      }
+
+      // Upload de arquivos se houver
+      const { id } = await res.json();
+      if (fotoCref || selfie) {
+        const formData = new FormData();
+        if (fotoCref) formData.append("fotoCref", fotoCref);
+        if (selfie) formData.append("selfie", selfie);
+        await fetch(`/api/cadastro/personal/${id}/upload`, {
+          method: "POST",
+          body: formData,
+        }).catch(() => {}); // upload é best-effort
+      }
+
+      setDone(true);
+    } catch {
+      setApiError("Erro de conexão. Tente novamente.");
+    }
   }
 
   /* ── CEP ── */
@@ -206,12 +309,86 @@ export default function CadastroPersonalPage() {
   function removeAcademia(a: string) {
     setValue("academias", (w.academias || []).filter((x) => x !== a));
   }
-  const filteredAc = ACADEMIAS.filter(
-    (a) =>
-      acSearch.length >= 2 &&
-      a.toLowerCase().includes(acSearch.toLowerCase()) &&
-      !(w.academias || []).includes(a)
+  const filteredAc = academiasDB
+    .map((a) => a.nome)
+    .filter(
+      (a) =>
+        acSearch.length >= 2 &&
+        a.toLowerCase().includes(acSearch.toLowerCase()) &&
+        !(w.academias || []).includes(a)
+    );
+
+  /* ── Região toggles ── */
+  function addRegiao(r: string) {
+    const cur = w.regioes || [];
+    if (!cur.includes(r)) setValue("regioes", [...cur, r], { shouldValidate: true });
+    setRegSearch("");
+    setRegOpen(false);
+  }
+  function removeRegiao(r: string) {
+    setValue("regioes", (w.regioes || []).filter((x) => x !== r), { shouldValidate: true });
+  }
+  const filteredReg = REGIOES.filter(
+    (r) =>
+      regSearch.length >= 1 &&
+      r.toLowerCase().includes(regSearch.toLowerCase()) &&
+      !(w.regioes || []).includes(r)
   );
+
+  /* ── Modalidade toggle ── */
+  function toggleModalidade(m: string) {
+    const cur = w.modalidades || [];
+    if (cur.includes(m)) {
+      setValue("modalidades", cur.filter((x) => x !== m), { shouldValidate: true });
+    } else {
+      setValue("modalidades", [...cur, m], { shouldValidate: true });
+    }
+  }
+
+  /* ── Validar convite ── */
+  async function validarConvite() {
+    if (!conviteInput.trim() || !w.cpf) {
+      setConviteStatus({ erro: "Preencha o CPF no passo 2 antes de validar o convite" });
+      return;
+    }
+    try {
+      const res = await fetch("/api/convite/validar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codigo: conviteInput, cpf: w.cpf }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setConviteStatus({ valido: true, msg: data.beneficio });
+        setValue("codigoConvite", conviteInput);
+      } else {
+        setConviteStatus({ erro: data.error });
+      }
+    } catch {
+      setConviteStatus({ erro: "Erro ao validar convite" });
+    }
+  }
+
+  /* ── Validar cupom ── */
+  async function validarCupom() {
+    if (!cupomInput.trim()) return;
+    try {
+      const res = await fetch("/api/cupom/aplicar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codigo: cupomInput }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCupomStatus({ valido: true, descricao: data.descricao });
+        setValue("codigoCupom", cupomInput);
+      } else {
+        setCupomStatus({ erro: data.error });
+      }
+    } catch {
+      setCupomStatus({ erro: "Erro ao validar cupom" });
+    }
+  }
 
   /* ── Preview de arquivo ── */
   function filePreview(file: File | null) {
@@ -578,9 +755,92 @@ export default function CadastroPersonalPage() {
           {/* ╔══════════ STEP 4 — Trabalho ══════════╗ */}
           {step === 3 && (
             <div className="space-y-6 animate-in fade-in duration-300">
+              {/* Modalidades */}
+              <div>
+                <label className={labelCls}>Modalidades que você atende</label>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {MODALIDADES.map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => toggleModalidade(m)}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium border transition text-left ${
+                        (w.modalidades || []).includes(m)
+                          ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-500"
+                          : "bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-zinc-600"
+                      }`}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+                {errors.modalidades && <p className={errorCls}>{errors.modalidades.message}</p>}
+              </div>
+
+              {/* Regiões */}
+              <div ref={regRef}>
+                <label className={labelCls}>Regiões onde você atende</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                  <input
+                    type="text"
+                    value={regSearch}
+                    onChange={(e) => {
+                      setRegSearch(e.target.value);
+                      setRegOpen(true);
+                    }}
+                    onFocus={() => setRegOpen(true)}
+                    className={`${inputCls} pl-10`}
+                    placeholder="Buscar região..."
+                  />
+                  {regOpen && filteredReg.length > 0 && (
+                    <div className="absolute z-20 left-0 right-0 mt-1 bg-zinc-800 border border-zinc-700 rounded-lg max-h-48 overflow-y-auto shadow-xl">
+                      {filteredReg.map((r) => (
+                        <button
+                          key={r}
+                          type="button"
+                          onClick={() => addRegiao(r)}
+                          className="w-full text-left px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-700 transition"
+                        >
+                          {r}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {/* Opção de região customizada */}
+                  {regSearch.length >= 2 && filteredReg.length === 0 && regOpen && (
+                    <div className="absolute z-20 left-0 right-0 mt-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl">
+                      <button
+                        type="button"
+                        onClick={() => addRegiao(regSearch)}
+                        className="w-full text-left px-4 py-2.5 text-sm text-yellow-500 hover:bg-zinc-700 transition"
+                      >
+                        + Adicionar &quot;{regSearch}&quot;
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {(w.regioes || []).length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {(w.regioes || []).map((r) => (
+                      <span
+                        key={r}
+                        className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-500 text-xs font-medium border border-yellow-500/20"
+                      >
+                        {r}
+                        <button type="button" onClick={() => removeRegiao(r)}>
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {errors.regioes && <p className={errorCls}>{errors.regioes.message}</p>}
+              </div>
+
               {/* Academias */}
               <div ref={acRef}>
-                <label className={labelCls}>Academias onde você já dá aula (matriculado e ativo)</label>
+                <label className={labelCls}>Academias onde você já dá aula (opcional)</label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                   <input
@@ -624,6 +884,32 @@ export default function CadastroPersonalPage() {
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* Preferência de gênero */}
+              <div>
+                <label className={labelCls}>Preferência de gênero para aulas</label>
+                <div className="grid grid-cols-3 gap-3 mt-2">
+                  {[
+                    { value: "ambos", label: "Ambos" },
+                    { value: "homens", label: "Só Homens" },
+                    { value: "mulheres", label: "Só Mulheres" },
+                  ].map(({ value, label }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setValue("preferenciaGeneroAluno", value, { shouldValidate: true })}
+                      className={`px-4 py-3 rounded-lg text-sm font-medium border transition ${
+                        w.preferenciaGeneroAluno === value
+                          ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-500"
+                          : "bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-zinc-600"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {errors.preferenciaGeneroAluno && <p className={errorCls}>{errors.preferenciaGeneroAluno.message}</p>}
               </div>
 
               {/* Disponibilidade em casa */}
@@ -741,6 +1027,98 @@ export default function CadastroPersonalPage() {
                 </label>
                 {errors.aceitaTaxa && <p className={`${errorCls} ml-8`}>{errors.aceitaTaxa.message}</p>}
               </div>
+
+              {/* Convite / Cupom */}
+              <div className="border-t border-zinc-800 pt-6 space-y-4">
+                <p className="text-sm text-zinc-400 font-medium">Tem convite ou cupom de desconto? (opcional)</p>
+
+                {/* Convite */}
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setShowConvite(!showConvite)}
+                    className="flex items-center gap-2 text-sm text-yellow-500 hover:text-yellow-400 transition"
+                  >
+                    <Gift className="w-4 h-4" />
+                    {showConvite ? "Esconder campo de convite" : "Tenho um código de convite"}
+                  </button>
+                  {showConvite && (
+                    <div className="mt-3 flex gap-2">
+                      <input
+                        value={conviteInput}
+                        onChange={(e) => {
+                          setConviteInput(e.target.value.toUpperCase());
+                          setConviteStatus({});
+                        }}
+                        placeholder="Código do convite"
+                        className={`${inputCls} flex-1`}
+                      />
+                      <button
+                        type="button"
+                        onClick={validarConvite}
+                        className="px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-300 hover:border-yellow-500 transition"
+                      >
+                        Validar
+                      </button>
+                    </div>
+                  )}
+                  {conviteStatus.valido && (
+                    <p className="text-green-400 text-xs mt-2 flex items-center gap-1">
+                      <Check className="w-3 h-3" /> {conviteStatus.msg}
+                    </p>
+                  )}
+                  {conviteStatus.erro && (
+                    <p className="text-red-400 text-xs mt-2">{conviteStatus.erro}</p>
+                  )}
+                </div>
+
+                {/* Cupom */}
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setShowCupom(!showCupom)}
+                    className="flex items-center gap-2 text-sm text-yellow-500 hover:text-yellow-400 transition"
+                  >
+                    <Ticket className="w-4 h-4" />
+                    {showCupom ? "Esconder campo de cupom" : "Tenho um cupom de desconto"}
+                  </button>
+                  {showCupom && (
+                    <div className="mt-3 flex gap-2">
+                      <input
+                        value={cupomInput}
+                        onChange={(e) => {
+                          setCupomInput(e.target.value.toUpperCase());
+                          setCupomStatus({});
+                        }}
+                        placeholder="Código do cupom"
+                        className={`${inputCls} flex-1`}
+                      />
+                      <button
+                        type="button"
+                        onClick={validarCupom}
+                        className="px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-300 hover:border-yellow-500 transition"
+                      >
+                        Aplicar
+                      </button>
+                    </div>
+                  )}
+                  {cupomStatus.valido && (
+                    <p className="text-green-400 text-xs mt-2 flex items-center gap-1">
+                      <Check className="w-3 h-3" /> {cupomStatus.descricao}
+                    </p>
+                  )}
+                  {cupomStatus.erro && (
+                    <p className="text-red-400 text-xs mt-2">{cupomStatus.erro}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Erro da API ── */}
+          {apiError && (
+            <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+              {apiError}
             </div>
           )}
 
@@ -774,8 +1152,8 @@ export default function CadastroPersonalPage() {
                   <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
                   <>
-                    Criar Conta
-                    <Check className="w-4 h-4" />
+                    Enviar para Análise
+                    <ArrowRight className="w-4 h-4" />
                   </>
                 )}
               </button>

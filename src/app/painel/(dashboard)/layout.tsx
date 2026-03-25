@@ -13,6 +13,8 @@ import {
   LogOut,
   Menu,
   X,
+  Gift,
+  Ticket,
 } from "lucide-react";
 
 interface AdminSession {
@@ -26,6 +28,8 @@ const navItems = [
   { href: "/painel/alunos", label: "Alunos", icon: Users },
   { href: "/painel/personais", label: "Personais", icon: Dumbbell },
   { href: "/painel/academias", label: "Academias", icon: Building2 },
+  { href: "/painel/convites", label: "Convites", icon: Gift },
+  { href: "/painel/cupons", label: "Cupons", icon: Ticket },
   { href: "/painel/faturamento", label: "Faturamento", icon: DollarSign },
   { href: "/painel/admins", label: "Administradores", icon: ShieldCheck },
 ];

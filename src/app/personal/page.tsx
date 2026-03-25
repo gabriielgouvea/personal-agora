@@ -14,6 +14,12 @@ import {
   CalendarCheck,
   Zap,
   BadgeCheck,
+  Star,
+  Crown,
+  Rocket,
+  Info,
+  Ticket,
+  Gift,
 } from "lucide-react";
 
 export default function PersonalPage() {
@@ -173,83 +179,160 @@ export default function PersonalPage() {
         </div>
       </section>
 
-      {/* ───────── MODELO FINANCEIRO ───────── */}
+      {/* ───────── PLANOS ───────── */}
       <section className="py-20 bg-zinc-950 border-t border-zinc-900">
-        <div className="container mx-auto px-6 max-w-5xl">
+        <div className="container mx-auto px-6 max-w-6xl">
           <div className="text-center mb-14">
             <DollarSign className="w-10 h-10 text-yellow-500 mx-auto mb-4" />
             <h2 className="text-3xl md:text-5xl font-black tracking-tighter uppercase italic">
-              Quanto <span className="text-yellow-500">custa</span>?
+              Escolha seu <span className="text-yellow-500">plano</span>
             </h2>
+            <p className="text-zinc-400 mt-4 max-w-2xl mx-auto">
+              Quanto mais alto o plano, mais visibilidade e vantagens você tem na plataforma.
+            </p>
           </div>
 
-          <div className="max-w-3xl mx-auto">
-            <div className="p-8 md:p-10 rounded-2xl bg-zinc-900/60 border border-zinc-800">
-              <div className="text-center mb-8">
-                <p className="text-5xl md:text-6xl font-black text-yellow-500 mb-2">R$ 0</p>
-                <p className="text-zinc-400 text-lg">para se cadastrar e manter seu perfil</p>
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* Start */}
+            <div className="relative p-8 rounded-2xl bg-zinc-900/60 border border-zinc-800 hover:border-zinc-600 transition-all flex flex-col">
+              <div className="flex items-center gap-3 mb-4">
+                <Rocket className="w-8 h-8 text-zinc-400" />
+                <h3 className="text-2xl font-black uppercase italic">Start</h3>
               </div>
-
-              <div className="border-t border-zinc-700 pt-8">
-                <div className="flex items-start gap-4 mb-6">
-                  <div className="w-10 h-10 bg-yellow-500/10 rounded-lg flex items-center justify-center shrink-0">
-                    <TrendingUp className="w-5 h-5 text-yellow-500" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-white text-lg mb-1">Comissão de 20% por aula</h4>
-                    <p className="text-zinc-400 leading-relaxed">
-                      Você só paga quando ganha. A plataforma retém <strong className="text-zinc-200">20%</strong>{" "}
-                      do valor de cada transação. Se você não faz aulas, não paga nada. Sem mensalidade,
-                      sem taxa de adesão, sem surpresas.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4 mb-6">
-                  <div className="w-10 h-10 bg-yellow-500/10 rounded-lg flex items-center justify-center shrink-0">
-                    <Wallet className="w-5 h-5 text-yellow-500" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-white text-lg mb-1">Dinheiro na conta no mesmo dia</h4>
-                    <p className="text-zinc-400 leading-relaxed">
-                      Após a confirmação do pagamento do aluno, você recebe o valor líquido (80%){" "}
-                      <strong className="text-zinc-200">em até 24 horas</strong>. Direto na sua conta bancária.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-yellow-500/10 rounded-lg flex items-center justify-center shrink-0">
-                    <Shield className="w-5 h-5 text-yellow-500" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-white text-lg mb-1">Pagamento é responsabilidade da plataforma</h4>
-                    <p className="text-zinc-400 leading-relaxed">
-                      Você nunca precisa cobrar o aluno. A plataforma cuida de cobrança, nota fiscal e repasse.
-                      Foque no que importa: dar treinos.
-                    </p>
-                  </div>
-                </div>
+              <div className="mb-6">
+                <p className="text-4xl font-black text-white">
+                  R$ 29<span className="text-2xl">,90</span>
+                  <span className="text-sm text-zinc-500 font-normal">/mês</span>
+                </p>
               </div>
+              <ul className="space-y-3 flex-1 mb-8">
+                {[
+                  "Perfil visível para alunos da região",
+                  "Recebe notificações de demanda",
+                  "Pode aceitar até 10 aulas/mês",
+                  "Suporte por e-mail",
+                ].map((item) => (
+                  <li key={item} className="flex gap-2 text-sm text-zinc-300">
+                    <CheckCircle2 className="w-4 h-4 text-zinc-500 shrink-0 mt-0.5" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/cadastro/personal"
+                className="block text-center py-3 border border-zinc-600 text-zinc-300 font-bold rounded-full hover:border-zinc-400 transition"
+              >
+                Começar com Start
+              </Link>
+            </div>
 
-              {/* Example */}
-              <div className="mt-8 p-5 rounded-xl bg-zinc-800/50 border border-zinc-700">
-                <p className="text-sm text-zinc-400 font-medium mb-3">Exemplo:</p>
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <p className="text-zinc-500 text-xs uppercase tracking-wide mb-1">Valor da aula</p>
-                    <p className="text-white font-bold text-lg">R$ 150</p>
-                  </div>
-                  <div>
-                    <p className="text-zinc-500 text-xs uppercase tracking-wide mb-1">Comissão (20%)</p>
-                    <p className="text-zinc-400 font-bold text-lg">R$ 30</p>
-                  </div>
-                  <div>
-                    <p className="text-zinc-500 text-xs uppercase tracking-wide mb-1">Você recebe</p>
-                    <p className="text-yellow-500 font-bold text-lg">R$ 120</p>
-                  </div>
-                </div>
+            {/* Pro (destaque) */}
+            <div className="relative p-8 rounded-2xl bg-gradient-to-b from-yellow-500/10 to-zinc-900/60 border-2 border-yellow-500/50 hover:border-yellow-500 transition-all flex flex-col scale-[1.02]">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-yellow-500 text-black text-xs font-black uppercase rounded-full">
+                Mais Popular
               </div>
+              <div className="flex items-center gap-3 mb-4">
+                <Star className="w-8 h-8 text-yellow-500" />
+                <h3 className="text-2xl font-black uppercase italic text-yellow-500">Pro</h3>
+              </div>
+              <div className="mb-6">
+                <p className="text-4xl font-black text-white">
+                  R$ 49<span className="text-2xl">,90</span>
+                  <span className="text-sm text-zinc-500 font-normal">/mês</span>
+                </p>
+              </div>
+              <ul className="space-y-3 flex-1 mb-8">
+                {[
+                  "Tudo do Start",
+                  "Aulas ilimitadas",
+                  "Prioridade no ranking de busca",
+                  "Selo de verificação no perfil",
+                  "Suporte prioritário via WhatsApp",
+                ].map((item) => (
+                  <li key={item} className="flex gap-2 text-sm text-zinc-300">
+                    <CheckCircle2 className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/cadastro/personal"
+                className="block text-center py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-full transition hover:scale-[1.02] active:scale-95"
+              >
+                Começar com Pro
+              </Link>
+            </div>
+
+            {/* Elite */}
+            <div className="relative p-8 rounded-2xl bg-zinc-900/60 border border-zinc-800 hover:border-yellow-500/30 transition-all flex flex-col">
+              <div className="flex items-center gap-3 mb-4">
+                <Crown className="w-8 h-8 text-yellow-500" />
+                <h3 className="text-2xl font-black uppercase italic">Elite</h3>
+              </div>
+              <div className="mb-6">
+                <p className="text-4xl font-black text-white">
+                  R$ 99<span className="text-2xl">,90</span>
+                  <span className="text-sm text-zinc-500 font-normal">/mês</span>
+                </p>
+              </div>
+              <ul className="space-y-3 flex-1 mb-8">
+                {[
+                  "Tudo do Pro",
+                  "Badge \"Destaque\" no perfil",
+                  "Aparece no topo das buscas",
+                  "Destaque na home para alunos",
+                  "Suporte VIP + consultoria de perfil",
+                  "Acesso a relatórios de demanda da região",
+                ].map((item) => (
+                  <li key={item} className="flex gap-2 text-sm text-zinc-300">
+                    <CheckCircle2 className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/cadastro/personal"
+                className="block text-center py-3 border border-yellow-500/50 text-yellow-500 font-bold rounded-full hover:bg-yellow-500/10 transition"
+              >
+                Começar com Elite
+              </Link>
+            </div>
+          </div>
+
+          {/* Convite + Cupom */}
+          <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="flex items-center gap-2 px-5 py-3 rounded-xl bg-zinc-900/60 border border-zinc-800">
+              <Gift className="w-5 h-5 text-yellow-500" />
+              <span className="text-sm text-zinc-300">Tem um convite?</span>
+              <Link
+                href="/cadastro/personal?convite=1"
+                className="text-sm text-yellow-500 font-bold hover:text-yellow-400 transition"
+              >
+                2 meses grátis no Pro →
+              </Link>
+            </div>
+            <div className="flex items-center gap-2 px-5 py-3 rounded-xl bg-zinc-900/60 border border-zinc-800">
+              <Ticket className="w-5 h-5 text-yellow-500" />
+              <span className="text-sm text-zinc-300">Tem cupom de desconto?</span>
+              <Link
+                href="/cadastro/personal?cupom=1"
+                className="text-sm text-yellow-500 font-bold hover:text-yellow-400 transition"
+              >
+                Aplicar cupom →
+              </Link>
+            </div>
+          </div>
+
+          {/* Tooltip regras */}
+          <div className="mt-8 max-w-2xl mx-auto">
+            <div className="flex items-start gap-3 p-4 rounded-xl bg-zinc-900/40 border border-zinc-800">
+              <Info className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
+              <p className="text-xs text-zinc-500 leading-relaxed">
+                <strong className="text-zinc-400">Como funciona a landing page:</strong> Seu perfil fica visível para alunos
+                que buscam personal na sua região. Antes do pagamento, o aluno vê apenas seu primeiro nome, foto e descrição.
+                Contato (WhatsApp, telefone, Instagram) só é liberado após pagamento confirmado. Você define seus preços com total autonomia.
+                Perfis com CREF e selfie verificados recebem selo de confiança. Personais Elite ganham badge &quot;Destaque&quot; e prioridade máxima nas buscas.
+              </p>
             </div>
           </div>
         </div>
@@ -264,7 +347,7 @@ export default function PersonalPage() {
 
           <div className="grid sm:grid-cols-2 gap-5">
             {[
-              "Cadastro 100% gratuito — sem mensalidade",
+              "Planos a partir de R$ 29,90/mês — acessível para todo personal",
               "Você define o preço da sua aula e dos planos",
               "Recebe notificações em tempo real de alunos na sua região",
               "Aulas avulsas imediatas e fechamento de planos mensais",
