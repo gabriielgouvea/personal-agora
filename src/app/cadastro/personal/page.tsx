@@ -717,7 +717,7 @@ function CadastroPersonalContent() {
             </div>
           )}
 
-          {/* ╔══════════ STEP 2 — Pessoal & Endereço ══════════╗ */
+          {/* ╔══════════ STEP 2 — Pessoal & Endereço ══════════╗ */}
           {step === 1 && (
             <div className="space-y-5 animate-in fade-in duration-300">
               <div className="grid grid-cols-2 gap-4">
