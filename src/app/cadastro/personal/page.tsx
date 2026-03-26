@@ -360,7 +360,7 @@ function CadastroPersonalContent() {
     setRegSearch(value);
     setRegOpen(true);
     if (regDebounceRef.current) clearTimeout(regDebounceRef.current);
-    if (value.length < 3) {
+    if (value.length < 2) {
       setRegSuggestions([]);
       return;
     }
@@ -985,7 +985,7 @@ function CadastroPersonalContent() {
                   {regLoading && (
                     <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-yellow-500 animate-spin" />
                   )}
-                  {regOpen && regSearch.length >= 3 && !regLoading && (
+                  {regOpen && regSearch.length >= 2 && !regLoading && (
                     <div className="absolute z-20 left-0 right-0 mt-1 bg-zinc-800 border border-zinc-700 rounded-lg max-h-48 overflow-y-auto shadow-xl">
                       {regSuggestions
                         .filter((s) => !(w.regioes || []).includes(s.description))

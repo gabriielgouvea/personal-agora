@@ -2,38 +2,36 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
   const input = req.nextUrl.searchParams.get("input");
-  if (!input || input.length < 3) {
+  if (!input || input.length < 2) {
     return NextResponse.json([]);
   }
 
-  const url = new URL("https://nominatim.openstreetmap.org/search");
+  const url = new URL("https://photon.komoot.io/api/");
   url.searchParams.set("q", input);
-  url.searchParams.set("format", "json");
-  url.searchParams.set("addressdetails", "1");
-  url.searchParams.set("countrycodes", "br");
   url.searchParams.set("limit", "7");
-  url.searchParams.set("accept-language", "pt-BR");
+  url.searchParams.set("lang", "pt");
+  url.searchParams.set("bbox", "-73.99,-33.75,-34.79,5.27"); // bounding box do Brasil
 
   try {
     const res = await fetch(url.toString(), {
-      headers: {
-        "User-Agent": "PersonalAgora/1.0 (personal-agora)",
-      },
+      headers: { "User-Agent": "PersonalAgora/1.0" },
     });
     const data = await res.json();
 
-    if (!Array.isArray(data)) {
+    if (!data.features || !Array.isArray(data.features)) {
       return NextResponse.json([]);
     }
 
     const seen = new Set<string>();
-    const suggestions = data
-      .map((item: { display_name: string; place_id: number }) => ({
-        description: item.display_name,
-        placeId: String(item.place_id),
-      }))
-      .filter(({ description }) => {
-        if (seen.has(description)) return false;
+    const suggestions = data.features
+      .map((f: { properties: { name?: string; city?: string; state?: string; country?: string; postcode?: string; district?: string }; }) => {
+        const p = f.properties;
+        const parts = [p.name, p.district, p.city, p.state].filter(Boolean);
+        const description = parts.join(", ");
+        return { description, placeId: description };
+      })
+      .filter(({ description }: { description: string }) => {
+        if (!description || seen.has(description)) return false;
         seen.add(description);
         return true;
       });
