@@ -3,6 +3,15 @@ import prisma from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
   try {
+    // Verificar token de segurança do Asaas (configurado no painel → Integrações → Webhooks)
+    const webhookToken = process.env.ASAAS_WEBHOOK_TOKEN;
+    if (webhookToken) {
+      const receivedToken = req.headers.get("asaas-access-token");
+      if (receivedToken !== webhookToken) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+    }
+
     const body = await req.json();
     const event: string = body.event;
     const payment = body.payment;
