@@ -78,6 +78,11 @@ export default function AssinaturaPage() {
   const [payingId, setPayingId] = useState<string | null>(null);
   const [payBillingType, setPayBillingType] = useState<"CREDIT_CARD" | "PIX">("PIX");
   const [payLoading, setPayLoading] = useState(false);
+
+  // Ativar plano (sem Asaas)
+  const [ativarBillingType, setAtivarBillingType] = useState<"PIX" | "CREDIT_CARD">("PIX");
+  const [ativarLoading, setAtivarLoading] = useState(false);
+  const [ativarError, setAtivarError] = useState<string | null>(null);
   const [payError, setPayError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -146,6 +151,32 @@ export default function AssinaturaPage() {
       setPayError("Erro de conexão. Tente novamente.");
     } finally {
       setPayLoading(false);
+    }
+  }
+
+  async function handleAtivar() {
+    setAtivarLoading(true);
+    setAtivarError(null);
+    try {
+      const res = await fetch("/api/me/assinatura/ativar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ billingType: ativarBillingType }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setAtivarError(json.error ?? "Erro ao iniciar pagamento.");
+        return;
+      }
+      if (json.paymentUrl) {
+        window.location.href = json.paymentUrl;
+      } else {
+        setAtivarError("Link de pagamento não disponível. Tente novamente ou contate o suporte.");
+      }
+    } catch {
+      setAtivarError("Erro de conexão. Tente novamente.");
+    } finally {
+      setAtivarLoading(false);
     }
   }
 
@@ -362,6 +393,66 @@ export default function AssinaturaPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Plano inativo — precisa ativar pagamento */}
+      {!data.planoAtivo && !cancelado && (data.semAsaas || (!data.overdue?.length && !data.pending?.length)) && (
+        <div className="bg-zinc-900 border border-yellow-500/30 rounded-2xl p-6 space-y-4">
+          <div className="flex items-start gap-3">
+            <CreditCard className="h-5 w-5 text-yellow-500 mt-0.5 shrink-0" />
+            <div>
+              <h2 className="font-bold text-sm text-white">Ative seu plano</h2>
+              <p className="text-xs text-zinc-500 mt-1">
+                Seu cadastro foi aprovado! Para começar a usar a plataforma, realize o pagamento da
+                primeira mensalidade. Escolha a forma de pagamento abaixo.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-xs text-zinc-400 font-medium">Forma de pagamento</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setAtivarBillingType("PIX")}
+                className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 transition ${
+                  ativarBillingType === "PIX"
+                    ? "border-yellow-500 bg-yellow-500/10"
+                    : "border-zinc-700 bg-zinc-800 hover:border-zinc-600"
+                }`}
+              >
+                <span className="text-xl">⚡</span>
+                <span className={`text-xs font-bold ${ativarBillingType === "PIX" ? "text-yellow-400" : "text-zinc-300"}`}>
+                  PIX
+                </span>
+              </button>
+              <button
+                onClick={() => setAtivarBillingType("CREDIT_CARD")}
+                className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 transition ${
+                  ativarBillingType === "CREDIT_CARD"
+                    ? "border-yellow-500 bg-yellow-500/10"
+                    : "border-zinc-700 bg-zinc-800 hover:border-zinc-600"
+                }`}
+              >
+                <span className="text-xl">💳</span>
+                <span className={`text-xs font-bold ${ativarBillingType === "CREDIT_CARD" ? "text-yellow-400" : "text-zinc-300"}`}>
+                  Cartão de crédito
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {ativarError && (
+            <p className="text-xs text-red-400 bg-red-400/10 px-3 py-2 rounded-lg">{ativarError}</p>
+          )}
+
+          <button
+            onClick={handleAtivar}
+            disabled={ativarLoading}
+            className="w-full py-3 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed text-black font-bold text-sm rounded-xl transition-colors"
+          >
+            {ativarLoading ? "Gerando link de pagamento..." : "Ir para o pagamento"}
+          </button>
         </div>
       )}
 

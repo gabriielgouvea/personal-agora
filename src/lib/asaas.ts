@@ -47,7 +47,8 @@ export async function createOrFindAsaasCustomer(
 
 export async function createAsaasSubscription(
   customerId: string,
-  plano: string
+  plano: string,
+  billingType: "PIX" | "CREDIT_CARD" | "UNDEFINED" = "UNDEFINED"
 ): Promise<string> {
   const value = PLAN_VALUES[plano] ?? 49.9;
   const nextDueDate = new Date().toISOString().split("T")[0];
@@ -55,7 +56,7 @@ export async function createAsaasSubscription(
 
   const sub = await asaasReq<{ id: string }>("/subscriptions", "POST", {
     customer: customerId,
-    billingType: "UNDEFINED",
+    billingType,
     value,
     nextDueDate,
     cycle: "MONTHLY",

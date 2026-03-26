@@ -166,6 +166,7 @@ function CadastroPersonalContent() {
   const [loadingCep, setLoadingCep] = useState(false);
   const [phoneError, setPhoneError] = useState("");
   const [apiError, setApiError] = useState("");
+  const [billingType, setBillingType] = useState<"PIX" | "CREDIT_CARD" | "">("");
 
   /* uploads locais (preview) */
   const [fotoCref, setFotoCref] = useState<File | null>(null);
@@ -280,6 +281,11 @@ function CadastroPersonalContent() {
   /* ── Submit ── */
   async function onSubmit(data: FormData) {
     setApiError("");
+    // Exigir forma de pagamento quando não tem convite
+    if (!conviteValidated && !billingType) {
+      setApiError("Selecione a forma de pagamento da mensalidade.");
+      return;
+    }
     try {
       const res = await fetch("/api/cadastro/personal", {
         method: "POST",
@@ -289,6 +295,7 @@ function CadastroPersonalContent() {
           plano: data.plano,
           modalidades: data.modalidades,
           regioes: data.regioes,
+          billingType: conviteValidated ? undefined : billingType,
           codigoConvite: conviteValidated ? "cpf" : (conviteStatus.valido ? "cpf" : undefined),
           codigoCupom: cupomStatus.valido ? cupomInput : undefined,
           confirmarCpfDuplicado: cpfConfirmed,
@@ -1328,6 +1335,50 @@ function CadastroPersonalContent() {
                   <p className="text-green-400 text-sm font-medium flex items-center gap-2">
                     <Check className="w-4 h-4" /> Convite aplicado — Plano Pro (2 meses grátis)
                   </p>
+                </div>
+              )}
+
+              {/* Forma de pagamento da mensalidade — só para quem não tem convite */}
+              {!conviteValidated && w.plano && (
+                <div>
+                  <label className={labelCls}>Forma de pagamento da mensalidade</label>
+                  <div className="grid grid-cols-2 gap-3 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => setBillingType("PIX")}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition ${
+                        billingType === "PIX"
+                          ? "border-yellow-500 bg-yellow-500/10"
+                          : "border-zinc-700 bg-zinc-800 hover:border-zinc-600"
+                      }`}
+                    >
+                      <span className={`text-2xl ${billingType === "PIX" ? "opacity-100" : "opacity-60"}`}>⚡</span>
+                      <span className={`text-sm font-bold ${billingType === "PIX" ? "text-yellow-500" : "text-white"}`}>
+                        PIX
+                      </span>
+                      <span className="text-xs text-zinc-500 text-center">Pagamento instantâneo</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBillingType("CREDIT_CARD")}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition ${
+                        billingType === "CREDIT_CARD"
+                          ? "border-yellow-500 bg-yellow-500/10"
+                          : "border-zinc-700 bg-zinc-800 hover:border-zinc-600"
+                      }`}
+                    >
+                      <span className={`text-2xl ${billingType === "CREDIT_CARD" ? "opacity-100" : "opacity-60"}`}>💳</span>
+                      <span className={`text-sm font-bold ${billingType === "CREDIT_CARD" ? "text-yellow-500" : "text-white"}`}>
+                        Cartão de crédito
+                      </span>
+                      <span className="text-xs text-zinc-500 text-center">Recorrência automática</span>
+                    </button>
+                  </div>
+                  {!billingType && (
+                    <p className="text-xs text-zinc-500 mt-2">
+                      Você será redirecionado para o checkout seguro após o cadastro.
+                    </p>
+                  )}
                 </div>
               )}
 

@@ -36,6 +36,7 @@ const registerSchema = z.object({
   tipoChavePix: z.string().min(1),
   chavePix: z.string().min(3),
   plano: z.string().min(1),
+  billingType: z.enum(["PIX", "CREDIT_CARD"]).optional(),
   codigoConvite: z.string().optional(),
   codigoCupom: z.string().optional(),
   confirmarCpfDuplicado: z.boolean().optional(),
@@ -209,7 +210,8 @@ export async function POST(request: Request) {
           data.email,
           data.cpf
         );
-        const subscriptionId = await createAsaasSubscription(customerId, plano || "pro");
+        const billingType = (body as { billingType?: "PIX" | "CREDIT_CARD" }).billingType ?? "UNDEFINED";
+        const subscriptionId = await createAsaasSubscription(customerId, plano || "pro", billingType);
         paymentUrl = await getSubscriptionPaymentUrl(subscriptionId);
         await prisma.user.update({
           where: { id: user.id },
