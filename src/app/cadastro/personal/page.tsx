@@ -984,7 +984,7 @@ function CadastroPersonalContent() {
                     onChange={(e) => handleRegSearchChange(e.target.value)}
                     onFocus={() => setRegOpen(true)}
                     className={`${inputCls} pl-10`}
-                    placeholder="Buscar região (ex: Alphaville, Moema)..."
+                    placeholder="Digite bairro, cidade ou estado (ex: Alphaville, Moema)..."
                   />
                   {regLoading && (
                     <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-yellow-500 animate-spin" />
