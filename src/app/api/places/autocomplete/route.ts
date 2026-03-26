@@ -10,7 +10,6 @@ export async function GET(req: NextRequest) {
   url.searchParams.set("q", input);
   url.searchParams.set("limit", "7");
   url.searchParams.set("lang", "pt");
-  url.searchParams.set("bbox", "-73.99,-33.75,-34.79,5.27"); // bounding box do Brasil
 
   try {
     const res = await fetch(url.toString(), {
