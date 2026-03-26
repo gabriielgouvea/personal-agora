@@ -8,8 +8,9 @@ export async function GET(req: NextRequest) {
 
   const url = new URL("https://photon.komoot.io/api/");
   url.searchParams.set("q", input);
-  url.searchParams.set("limit", "7");
-  url.searchParams.set("lang", "pt");
+  url.searchParams.set("limit", "8");
+  url.searchParams.set("lang", "default");
+  url.searchParams.set("osm_tag", "place");
 
   try {
     const res = await fetch(url.toString(), {
@@ -23,6 +24,9 @@ export async function GET(req: NextRequest) {
 
     const seen = new Set<string>();
     const suggestions = data.features
+      .filter((f: { properties: { countrycode?: string } }) =>
+        f.properties.countrycode === "BR"
+      )
       .map((f: { properties: { name?: string; city?: string; state?: string; country?: string; postcode?: string; district?: string }; }) => {
         const p = f.properties;
         const parts = [p.name, p.district, p.city, p.state].filter(Boolean);
