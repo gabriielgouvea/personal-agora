@@ -241,9 +241,9 @@ function CadastroPersonalContent() {
 
   const w = watch();
 
-  /* carregar academias do banco */
+  /* carregar academias do banco (endpoint público) */
   useEffect(() => {
-    fetch("/api/admin/academias")
+    fetch("/api/academias")
       .then((r) => (r.ok ? r.json() : []))
       .then((data) => setAcademiasDB(Array.isArray(data) ? data : []))
       .catch(() => {});
@@ -985,7 +985,7 @@ function CadastroPersonalContent() {
                   {regLoading && (
                     <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-yellow-500 animate-spin" />
                   )}
-                  {regOpen && regSuggestions.length > 0 && (
+                  {regOpen && regSearch.length >= 3 && !regLoading && (
                     <div className="absolute z-20 left-0 right-0 mt-1 bg-zinc-800 border border-zinc-700 rounded-lg max-h-48 overflow-y-auto shadow-xl">
                       {regSuggestions
                         .filter((s) => !(w.regioes || []).includes(s.description))
@@ -1000,18 +1000,15 @@ function CadastroPersonalContent() {
                             {s.description}
                           </button>
                         ))}
-                    </div>
-                  )}
-                  {/* Manual add if no API results */}
-                  {regSearch.length >= 3 && !regLoading && regSuggestions.length === 0 && regOpen && (
-                    <div className="absolute z-20 left-0 right-0 mt-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl">
-                      <button
-                        type="button"
-                        onClick={() => addRegiao(regSearch)}
-                        className="w-full text-left px-4 py-2.5 text-sm text-yellow-500 hover:bg-zinc-700 transition"
-                      >
-                        + Adicionar &quot;{regSearch}&quot;
-                      </button>
+                      {!(w.regioes || []).includes(regSearch) && (
+                        <button
+                          type="button"
+                          onClick={() => addRegiao(regSearch)}
+                          className="w-full text-left px-4 py-2.5 text-sm text-yellow-500 hover:bg-zinc-700 transition border-t border-zinc-700"
+                        >
+                          + Adicionar &quot;{regSearch}&quot;
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1049,7 +1046,7 @@ function CadastroPersonalContent() {
                     className={`${inputCls} pl-10`}
                     placeholder="Buscar academia..."
                   />
-                  {acOpen && filteredAc.length > 0 && (
+                  {acOpen && (filteredAc.length > 0 || acSearch.length >= 2) && (
                     <div className="absolute z-20 left-0 right-0 mt-1 bg-zinc-800 border border-zinc-700 rounded-lg max-h-48 overflow-y-auto shadow-xl">
                       {filteredAc.map((a) => (
                         <button
@@ -1061,6 +1058,15 @@ function CadastroPersonalContent() {
                           {a}
                         </button>
                       ))}
+                      {acSearch.length >= 2 && !filteredAc.includes(acSearch) && !(w.academias || []).includes(acSearch) && (
+                        <button
+                          type="button"
+                          onClick={() => addAcademia(acSearch)}
+                          className="w-full text-left px-4 py-2.5 text-sm text-yellow-500 hover:bg-zinc-700 transition border-t border-zinc-700"
+                        >
+                          + Adicionar &quot;{acSearch}&quot;
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1140,9 +1146,8 @@ function CadastroPersonalContent() {
                 </div>
                 {errors.valorAproximado && <p className={errorCls}>{errors.valorAproximado.message}</p>}
                 <p className="text-zinc-600 text-xs mt-2">
-                  Esse valor é apenas uma referência interna e <strong className="text-zinc-400">não aparecerá para o aluno</strong>.
-                  Na hora de atender, você define o preço final com total autonomia, considerando dia, horário
-                  e tipo de aula.
+                  Esse é o valor que <strong className="text-zinc-400">aparecerá para o aluno</strong> como preço da hora/aula.
+                  Você pode alterar esse valor a qualquer momento no seu painel após o cadastro.
                 </p>
               </div>
 
@@ -1363,7 +1368,15 @@ function CadastroPersonalContent() {
               <div>
                 <label className={labelCls}>Tipo de chave PIX</label>
                 <select
-                  {...register("tipoChavePix")}
+                  {...register("tipoChavePix", {
+                    onChange: (e) => {
+                      if (e.target.value === "cpf" && w.cpf) {
+                        setValue("chavePix", w.cpf, { shouldValidate: true });
+                      } else if (w.chavePix === w.cpf) {
+                        setValue("chavePix", "");
+                      }
+                    },
+                  })}
                   className={`${inputCls} appearance-none`}
                   defaultValue=""
                 >
@@ -1381,9 +1394,10 @@ function CadastroPersonalContent() {
                 <input
                   {...register("chavePix")}
                   className={inputCls}
+                  readOnly={w.tipoChavePix === "cpf"}
                   placeholder={
                     w.tipoChavePix === "cpf"
-                      ? "000.000.000-00"
+                      ? "Preenchido automaticamente com seu CPF"
                       : w.tipoChavePix === "celular"
                       ? "(11) 91234-5678"
                       : w.tipoChavePix === "email"
@@ -1391,6 +1405,9 @@ function CadastroPersonalContent() {
                       : "Cole sua chave aleatória"
                   }
                 />
+                {w.tipoChavePix === "cpf" && (
+                  <p className="text-zinc-600 text-xs mt-1">Preenchido automaticamente — não aceitamos PIX de terceiros.</p>
+                )}
                 {errors.chavePix && <p className={errorCls}>{errors.chavePix.message}</p>}
               </div>
 
