@@ -6,34 +6,37 @@ export async function GET(req: NextRequest) {
     return NextResponse.json([]);
   }
 
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json([]);
-  }
-
-  const url = new URL(
-    "https://maps.googleapis.com/maps/api/place/autocomplete/json"
-  );
-  url.searchParams.set("input", input);
-  url.searchParams.set("key", apiKey);
-  url.searchParams.set("components", "country:br");
-  url.searchParams.set("language", "pt-BR");
-  url.searchParams.set("types", "(regions)");
+  const url = new URL("https://nominatim.openstreetmap.org/search");
+  url.searchParams.set("q", input);
+  url.searchParams.set("format", "json");
+  url.searchParams.set("addressdetails", "1");
+  url.searchParams.set("countrycodes", "br");
+  url.searchParams.set("limit", "7");
+  url.searchParams.set("accept-language", "pt-BR");
 
   try {
-    const res = await fetch(url.toString());
+    const res = await fetch(url.toString(), {
+      headers: {
+        "User-Agent": "PersonalAgora/1.0 (personal-agora)",
+      },
+    });
     const data = await res.json();
 
-    if (data.status !== "OK") {
+    if (!Array.isArray(data)) {
       return NextResponse.json([]);
     }
 
-    const suggestions = data.predictions.map(
-      (p: { description: string; place_id: string }) => ({
-        description: p.description,
-        placeId: p.place_id,
-      })
-    );
+    const seen = new Set<string>();
+    const suggestions = data
+      .map((item: { display_name: string; place_id: number }) => ({
+        description: item.display_name,
+        placeId: String(item.place_id),
+      }))
+      .filter(({ description }) => {
+        if (seen.has(description)) return false;
+        seen.add(description);
+        return true;
+      });
 
     return NextResponse.json(suggestions);
   } catch {
