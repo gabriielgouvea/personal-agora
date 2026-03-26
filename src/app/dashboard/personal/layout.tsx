@@ -143,7 +143,7 @@ export default function DashboardPersonalLayout({
                     onClick={() => setMenuOpen(false)}
                     className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-800 transition"
                   >
-                    <Settings className="w-4 h-4" /> Meus Horários
+                    <Calendar className="w-4 h-4" /> Meus Horários
                   </Link>
                   <button
                     onClick={handleLogout}
