@@ -208,6 +208,11 @@ function CadastroPersonalContent() {
   const [regLoading, setRegLoading] = useState(false);
   const regDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
+  /* CPF já existente como aluno */
+  const [cpfWarning, setCpfWarning] = useState<"aluno" | "personal" | null>(null);
+  const [cpfChecking, setCpfChecking] = useState(false);
+  const [cpfConfirmed, setCpfConfirmed] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -267,6 +272,8 @@ function CadastroPersonalContent() {
       setPhoneError("Marque pelo menos uma opção (WhatsApp ou Telefone)");
       return;
     }
+    if (step === 1 && cpfWarning === "personal") return;
+    if (step === 1 && cpfWarning === "aluno" && !cpfConfirmed) return;
     if (valid) setStep((s) => s + 1);
   }
 
@@ -284,6 +291,7 @@ function CadastroPersonalContent() {
           regioes: data.regioes,
           codigoConvite: conviteValidated ? "cpf" : (conviteStatus.valido ? "cpf" : undefined),
           codigoCupom: cupomStatus.valido ? cupomInput : undefined,
+          confirmarCpfDuplicado: cpfConfirmed,
         }),
       });
 
@@ -324,6 +332,25 @@ function CadastroPersonalContent() {
       setValue("estado", addr.estado);
     }
     setLoadingCep(false);
+  }
+
+  /* ── CPF check antecipado ── */
+  async function checkCpf(value: string) {
+    const clean = value.replace(/\D/g, "");
+    if (clean.length !== 11) return;
+    setCpfChecking(true);
+    setCpfWarning(null);
+    try {
+      const res = await fetch(`/api/check-cpf?cpf=${clean}`);
+      const data = await res.json();
+      if (data.exists) {
+        setCpfWarning(
+          data.tipo === "personal" || data.tipo === "ambos" ? "personal" : "aluno"
+        );
+      }
+    } finally {
+      setCpfChecking(false);
+    }
   }
 
   /* ── Academia toggles ── */
@@ -744,9 +771,48 @@ function CadastroPersonalContent() {
                   {...register("cpf")}
                   className={inputCls}
                   placeholder="000.000.000-00"
-                  onChange={(e) => setValue("cpf", maskCPF(e.target.value))}
+                  onChange={(e) => {
+                    setValue("cpf", maskCPF(e.target.value));
+                    setCpfWarning(null);
+                    setCpfConfirmed(false);
+                  }}
+                  onBlur={(e) => checkCpf(e.target.value)}
                 />
                 {errors.cpf && <p className={errorCls}>{errors.cpf.message}</p>}
+                {cpfChecking && (
+                  <p className="text-zinc-400 text-xs mt-1 flex items-center gap-1">
+                    <Loader2 className="w-3 h-3 animate-spin inline" /> Verificando CPF...
+                  </p>
+                )}
+                {cpfWarning === "personal" && (
+                  <div className="mt-2 bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                    <p className="text-red-400 text-sm font-medium">CPF já cadastrado como personal</p>
+                    <p className="text-red-300/80 text-xs mt-1">
+                      Este CPF já possui um cadastro de personal trainer.{" "}
+                      <Link href="/login" className="underline">Faça login</Link>.
+                    </p>
+                  </div>
+                )}
+                {cpfWarning === "aluno" && !cpfConfirmed && (
+                  <div className="mt-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+                    <p className="text-yellow-400 text-sm font-medium">CPF já cadastrado como aluno</p>
+                    <p className="text-yellow-300/80 text-xs mt-1">
+                      Seu perfil de aluno será mantido. Você poderá acessar os dois perfis com o mesmo login.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setCpfConfirmed(true)}
+                      className="mt-2 text-xs bg-yellow-500 text-black font-bold px-3 py-1.5 rounded-lg hover:bg-yellow-400 transition"
+                    >
+                      Entendido, continuar
+                    </button>
+                  </div>
+                )}
+                {cpfWarning === "aluno" && cpfConfirmed && (
+                  <p className="text-green-400 text-xs mt-1">
+                    ✓ Cadastro de personal será vinculado ao seu perfil existente.
+                  </p>
+                )}
               </div>
 
               <hr className="border-zinc-800" />

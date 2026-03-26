@@ -37,6 +37,7 @@ const registerSchema = z.object({
   plano: z.string().min(1),
   codigoConvite: z.string().optional(),
   codigoCupom: z.string().optional(),
+  confirmarCpfDuplicado: z.boolean().optional(),
 });
 
 export async function POST(request: Request) {
@@ -52,38 +53,44 @@ export async function POST(request: Request) {
     }
 
     const data = result.data;
+    const confirmarCpfDuplicado = (body as { confirmarCpfDuplicado?: boolean }).confirmarCpfDuplicado === true;
 
     // Verificar duplicatas
-    const existing = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: data.email },
-          { cpf: data.cpf },
-          { telefone: data.telefone },
-        ],
-      },
-      select: { email: true, cpf: true, telefone: true },
+    const existingByCpf = await prisma.user.findUnique({
+      where: { cpf: data.cpf },
+      select: { id: true, tipo: true, email: true, telefone: true },
     });
 
-    if (existing) {
-      let field = "email";
-      let label = "e-mail";
-      if (existing.cpf === data.cpf) {
-        field = "cpf";
-        label = "CPF";
-      } else if (existing.telefone === data.telefone) {
-        field = "telefone";
-        label = "número de telefone";
+    if (existingByCpf) {
+      // CPF já tem cadastro de personal - bloquear sempre
+      if (existingByCpf.tipo === "personal" || existingByCpf.tipo === "ambos") {
+        return NextResponse.json(
+          { error: "duplicate", field: "cpf", message: "Esse CPF já está cadastrado como personal trainer." },
+          { status: 409 }
+        );
       }
-
-      return NextResponse.json(
-        {
-          error: "duplicate",
-          field,
-          message: `Esse ${label} já está cadastrado em nossa plataforma.`,
-        },
-        { status: 409 }
-      );
+      // CPF é aluno mas sem confirmação do usuário
+      if (!confirmarCpfDuplicado) {
+        return NextResponse.json(
+          { error: "duplicate", field: "cpf", message: "Esse CPF já está cadastrado como aluno. Confirme para vincular o perfil de personal." },
+          { status: 409 }
+        );
+      }
+      // CPF é aluno e usuário confirmou → vai fazer UPDATE ao final
+    } else {
+      // CPF não existe: checar email e telefone normalmente
+      const existingOther = await prisma.user.findFirst({
+        where: { OR: [{ email: data.email }, { telefone: data.telefone }] },
+        select: { email: true, telefone: true },
+      });
+      if (existingOther) {
+        const field = existingOther.email === data.email ? "email" : "telefone";
+        const label = field === "email" ? "e-mail" : "número de telefone";
+        return NextResponse.json(
+          { error: "duplicate", field, message: `Esse ${label} já está cadastrado em nossa plataforma.` },
+          { status: 409 }
+        );
+      }
     }
 
     // Processar convite
@@ -123,47 +130,65 @@ export async function POST(request: Request) {
 
     const hashedPassword = await hashPassword(data.senha);
 
-    const user = await prisma.user.create({
-      data: {
-        tipo: "personal",
-        status: "pendente",
-        nome: data.nome,
-        sobrenome: data.sobrenome,
-        email: data.email,
-        senha: hashedPassword,
-        telefone: data.telefone,
-        isWhatsapp: data.isWhatsapp,
-        isTelefone: data.isTelefone,
-        dataNascimento: data.dataNascimento,
-        sexo: data.sexo,
-        cpf: data.cpf,
-        cep: data.cep || null,
-        rua: data.rua || null,
-        bairro: data.bairro || null,
-        cidade: data.cidade || null,
-        estado: data.estado || null,
-        numero: data.numero || null,
-        complemento: data.complemento || null,
-        cref: data.cref,
-        validadeCref: data.validadeCref,
-        formacao: data.formacao,
-        rg: data.rg,
-        academias: JSON.stringify(data.academias),
-        modalidades: JSON.stringify(data.modalidades),
-        regioes: JSON.stringify(data.regioes),
-        preferenciaGeneroAluno: data.preferenciaGeneroAluno,
-        disponivelEmCasa: data.disponivelEmCasa,
-        disponibilidade: data.disponibilidade,
-        valorAproximado: data.valorAproximado,
-        tipoChavePix: data.tipoChavePix,
-        chavePix: data.chavePix,
-        plano,
-        planoAtivo,
-        planoInicio,
-        planoFim,
-        conviteUsado,
-      },
-    });
+    const personalFields = {
+      tipo: "ambos" as string,
+      status: "pendente",
+      cref: data.cref,
+      validadeCref: data.validadeCref,
+      formacao: data.formacao,
+      rg: data.rg,
+      academias: JSON.stringify(data.academias),
+      modalidades: JSON.stringify(data.modalidades),
+      regioes: JSON.stringify(data.regioes),
+      preferenciaGeneroAluno: data.preferenciaGeneroAluno,
+      disponivelEmCasa: data.disponivelEmCasa,
+      disponibilidade: data.disponibilidade,
+      valorAproximado: data.valorAproximado,
+      tipoChavePix: data.tipoChavePix,
+      chavePix: data.chavePix,
+      plano,
+      planoAtivo,
+      planoInicio,
+      planoFim,
+      conviteUsado,
+    };
+
+    let user: { id: string };
+
+    if (existingByCpf) {
+      // UPDATE do aluno existente: adiciona campos de personal
+      user = await prisma.user.update({
+        where: { id: existingByCpf.id },
+        data: personalFields,
+        select: { id: true },
+      });
+    } else {
+      // CREATE novo usuário
+      user = await prisma.user.create({
+        data: {
+          ...personalFields,
+          tipo: "personal",
+          nome: data.nome,
+          sobrenome: data.sobrenome,
+          email: data.email,
+          senha: hashedPassword,
+          telefone: data.telefone,
+          isWhatsapp: data.isWhatsapp,
+          isTelefone: data.isTelefone,
+          dataNascimento: data.dataNascimento,
+          sexo: data.sexo,
+          cpf: data.cpf,
+          cep: data.cep || null,
+          rua: data.rua || null,
+          bairro: data.bairro || null,
+          cidade: data.cidade || null,
+          estado: data.estado || null,
+          numero: data.numero || null,
+          complemento: data.complemento || null,
+        },
+        select: { id: true },
+      });
+    }
 
     // Marcar convite como usado
     if (conviteUsado) {

@@ -34,7 +34,7 @@ export default function LoginPage() {
         return;
       }
       // Redirecionar para o dashboard por tipo
-      const dest = data.tipo === "personal" ? "/dashboard/personal" : "/dashboard/aluno";
+      const dest = data.tipo === "personal" || data.tipo === "ambos" ? "/dashboard/personal" : "/dashboard/aluno";
       router.push(dest);
     } catch {
       setError("Erro de conexão. Tente novamente.");
