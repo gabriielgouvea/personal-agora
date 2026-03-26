@@ -1000,14 +1000,10 @@ function CadastroPersonalContent() {
                             {s.description}
                           </button>
                         ))}
-                      {!(w.regioes || []).includes(regSearch) && (
-                        <button
-                          type="button"
-                          onClick={() => addRegiao(regSearch)}
-                          className="w-full text-left px-4 py-2.5 text-sm text-yellow-500 hover:bg-zinc-700 transition border-t border-zinc-700"
-                        >
-                          + Adicionar &quot;{regSearch}&quot;
-                        </button>
+                      {regSuggestions.filter((s) => !(w.regioes || []).includes(s.description)).length === 0 && (
+                        <p className="px-4 py-3 text-sm text-zinc-500 text-center">
+                          Nenhum local encontrado. Tente outro nome ou CEP.
+                        </p>
                       )}
                     </div>
                   )}
