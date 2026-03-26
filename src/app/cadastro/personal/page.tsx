@@ -6,7 +6,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import RegionSearchTest from "@/components/RegionSearchTest";
 import {
   ArrowLeft,
   ArrowRight,
@@ -711,9 +710,6 @@ function CadastroPersonalContent() {
                 </div>
                 {phoneError && <p className={errorCls}>{phoneError}</p>}
               </div>
-
-              <hr className="border-zinc-800" />
-              <RegionSearchTest />
             </div>
           )}
 

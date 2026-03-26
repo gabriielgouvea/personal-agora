@@ -1,5 +1,4 @@
 import Link from "next/link";
-import RegionSearchTest from "@/components/RegionSearchTest";
 import {
   ArrowRight,
   Search,
@@ -81,7 +80,6 @@ export default function LandingPage() {
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
-          <RegionSearchTest />
         </div>
       </section>
       <section className="py-24 bg-zinc-950 border-t border-zinc-900">
