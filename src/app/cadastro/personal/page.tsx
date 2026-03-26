@@ -99,7 +99,7 @@ const schema = z
     formacao: z.string().min(1, "Selecione"),
     rg: z.string().min(5, "RG obrigatório"),
     /* 4 — Trabalho */
-    academias: z.array(z.string()),
+    academias: z.array(z.string()).min(1, "Selecione ao menos uma academia"),
     modalidades: z.array(z.string()).min(1, "Selecione ao menos uma modalidade"),
     regioes: z.array(z.string()).min(1, "Selecione ao menos uma região"),
     preferenciaGeneroAluno: z.string().min(1, "Selecione uma opção"),
@@ -174,7 +174,7 @@ function CadastroPersonalContent() {
   const selfieRef = useRef<HTMLInputElement>(null);
 
   /* academia search — carregadas do banco */
-  const [academiasDB, setAcademiasDB] = useState<{ id: string; nome: string }[]>([]);
+  const [academiasDB, setAcademiasDB] = useState<{ id: string; nome: string; endereco: string }[]>([]);
   const [acSearch, setAcSearch] = useState("");
   const [acOpen, setAcOpen] = useState(false);
   const acRef = useRef<HTMLDivElement>(null);
@@ -329,7 +329,7 @@ function CadastroPersonalContent() {
   /* ── Academia toggles ── */
   function addAcademia(a: string) {
     const cur = w.academias || [];
-    if (!cur.includes(a)) setValue("academias", [...cur, a]);
+    if (!cur.includes(a)) setValue("academias", [...cur, a], { shouldValidate: true });
     setAcSearch("");
     setAcOpen(false);
   }
@@ -337,12 +337,11 @@ function CadastroPersonalContent() {
     setValue("academias", (w.academias || []).filter((x) => x !== a));
   }
   const filteredAc = academiasDB
-    .map((a) => a.nome)
     .filter(
       (a) =>
         acSearch.length >= 2 &&
-        a.toLowerCase().includes(acSearch.toLowerCase()) &&
-        !(w.academias || []).includes(a)
+        a.nome.toLowerCase().includes(acSearch.toLowerCase()) &&
+        !(w.academias || []).includes(a.nome)
     );
 
   /* ── Região toggles ── */
@@ -1028,7 +1027,7 @@ function CadastroPersonalContent() {
 
               {/* Academias */}
               <div ref={acRef}>
-                <label className={labelCls}>Academias onde você já dá aula (opcional)</label>
+                <label className={labelCls}>Academias onde você dá aula <span className="text-red-500">*</span> <span className="text-zinc-500 font-normal text-xs">(pode selecionar mais de uma)</span></label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                   <input
@@ -1046,15 +1045,16 @@ function CadastroPersonalContent() {
                     <div className="absolute z-20 left-0 right-0 mt-1 bg-zinc-800 border border-zinc-700 rounded-lg max-h-48 overflow-y-auto shadow-xl">
                       {filteredAc.map((a) => (
                         <button
-                          key={a}
+                          key={a.id}
                           type="button"
-                          onClick={() => addAcademia(a)}
+                          onClick={() => addAcademia(a.nome)}
                           className="w-full text-left px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-700 transition"
                         >
-                          {a}
+                          <span className="font-medium">{a.nome}</span>
+                          {a.endereco && <span className="block text-xs text-zinc-500 mt-0.5">{a.endereco}</span>}
                         </button>
                       ))}
-                      {acSearch.length >= 2 && !filteredAc.includes(acSearch) && !(w.academias || []).includes(acSearch) && (
+                      {acSearch.length >= 2 && !filteredAc.find(a => a.nome === acSearch) && !(w.academias || []).includes(acSearch) && (
                         <button
                           type="button"
                           onClick={() => addAcademia(acSearch)}
@@ -1081,6 +1081,7 @@ function CadastroPersonalContent() {
                     ))}
                   </div>
                 )}
+                {errors.academias && <p className={errorCls}>{errors.academias.message}</p>}
               </div>
 
               {/* Preferência de gênero */}

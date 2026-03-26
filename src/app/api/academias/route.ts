@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   const academias = await prisma.academia.findMany({
     where,
     orderBy: { nome: "asc" },
-    select: { id: true, nome: true },
+    select: { id: true, nome: true, endereco: true },
     take: 50,
   });
 
