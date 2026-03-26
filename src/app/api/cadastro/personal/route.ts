@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
+import { createOrFindAsaasCustomer, createAsaasSubscription, getSubscriptionPaymentUrl } from "@/lib/asaas";
 
 const registerSchema = z.object({
   nome: z.string().min(2),
@@ -198,7 +199,29 @@ export async function POST(request: Request) {
       });
     }
 
-    return NextResponse.json({ success: true, id: user.id });
+    // Se não tem convite → criar assinatura no Asaas
+    let paymentUrl: string | null = null;
+    if (!planoAtivo) {
+      try {
+        const customerId = await createOrFindAsaasCustomer(
+          data.nome,
+          data.sobrenome,
+          data.email,
+          data.cpf
+        );
+        const subscriptionId = await createAsaasSubscription(customerId, plano || "pro");
+        paymentUrl = await getSubscriptionPaymentUrl(subscriptionId);
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { asaasCustomerId: customerId, asaasSubscriptionId: subscriptionId },
+        });
+      } catch (asaasErr) {
+        console.error("Asaas error (non-critical):", asaasErr);
+        // Não bloqueia o cadastro se o Asaas falhar
+      }
+    }
+
+    return NextResponse.json({ success: true, id: user.id, paymentUrl });
   } catch (error: unknown) {
     console.error(error);
     const err = error as { code?: string; message?: string };

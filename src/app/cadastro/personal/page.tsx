@@ -302,7 +302,7 @@ function CadastroPersonalContent() {
       }
 
       // Upload de arquivos se houver
-      const { id } = await res.json();
+      const { id, paymentUrl } = await res.json();
       if (fotoCref || selfie) {
         const formData = new FormData();
         if (fotoCref) formData.append("fotoCref", fotoCref);
@@ -311,6 +311,12 @@ function CadastroPersonalContent() {
           method: "POST",
           body: formData,
         }).catch(() => {}); // upload é best-effort
+      }
+
+      // Se há link de pagamento (sem convite) → redirecionar para Asaas
+      if (paymentUrl) {
+        window.location.href = paymentUrl;
+        return;
       }
 
       setDone(true);

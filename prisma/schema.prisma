@@ -89,6 +89,10 @@ model User {
   planoFim         DateTime?
   conviteUsado     String?  // código do convite usado
 
+  // Asaas
+  asaasCustomerId     String?
+  asaasSubscriptionId String?
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
