@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Search, ChevronLeft, ChevronRight, Eye, X } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Eye, X, UserRound, Dumbbell } from "lucide-react";
 
 interface User {
   id: string;
@@ -19,6 +19,7 @@ interface User {
 
 interface UserDetail {
   id: string;
+  tipo: string;
   nome: string;
   sobrenome: string;
   email: string;
@@ -105,6 +106,18 @@ export default function AlunosPage() {
     setEditing(false);
     setDetail({ ...detail, ...editData } as UserDetail);
     fetchUsers();
+  }
+
+  async function verComo(userId: string, tipoVisao: "aluno" | "personal") {
+    const res = await fetch("/api/admin/impersonate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, tipoVisao }),
+    });
+    const data = await res.json();
+    if (data.token) {
+      window.open(`/entrar-como?token=${data.token}&tipo=${tipoVisao}`, "_blank");
+    }
   }
 
   async function changeStatus(id: string, status: string) {
@@ -366,6 +379,24 @@ export default function AlunosPage() {
                             className="flex-1 bg-green-500/10 hover:bg-green-500/20 text-green-400 py-2 rounded-lg text-sm transition"
                           >
                             Ativar
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Ver como Aluno / Personal */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => verComo(detail.id, "aluno")}
+                          className="flex-1 flex items-center justify-center gap-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 py-2 rounded-lg text-sm font-medium transition"
+                        >
+                          <UserRound size={14} /> Ver como Aluno
+                        </button>
+                        {(detail.tipo === "ambos" || detail.tipo === "personal") && (
+                          <button
+                            onClick={() => verComo(detail.id, "personal")}
+                            className="flex-1 flex items-center justify-center gap-1.5 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 py-2 rounded-lg text-sm font-medium transition"
+                          >
+                            <Dumbbell size={14} /> Ver como Personal
                           </button>
                         )}
                       </div>
