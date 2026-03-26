@@ -3,6 +3,7 @@ import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
 import { createOrFindAsaasCustomer, createAsaasSubscription, getSubscriptionPaymentUrl } from "@/lib/asaas";
+import { isValidCPF } from "@/lib/utils";
 
 const registerSchema = z.object({
   nome: z.string().min(2),
@@ -202,8 +203,12 @@ export async function POST(request: Request) {
 
     // Se não tem convite → criar assinatura no Asaas
     let paymentUrl: string | null = null;
+    let asaasError: string | null = null;
     if (!planoAtivo) {
-      try {
+      if (!isValidCPF(data.cpf)) {
+        asaasError = "CPF inválido — não foi possível gerar o link de pagamento. Acesse o Dashboard → Assinatura para ativar após a aprovação.";
+      } else {
+        try {
         const customerId = await createOrFindAsaasCustomer(
           data.nome,
           data.sobrenome,
@@ -217,13 +222,14 @@ export async function POST(request: Request) {
           where: { id: user.id },
           data: { asaasCustomerId: customerId, asaasSubscriptionId: subscriptionId },
         });
-      } catch (asaasErr) {
-        console.error("Asaas error (non-critical):", asaasErr);
-        // Não bloqueia o cadastro se o Asaas falhar
+        } catch (asaasErr) {
+          asaasError = asaasErr instanceof Error ? asaasErr.message : "Erro ao integrar com sistema de pagamento";
+          console.error("Asaas error:", asaasError);
+        }
       }
     }
 
-    return NextResponse.json({ success: true, id: user.id, paymentUrl });
+    return NextResponse.json({ success: true, id: user.id, paymentUrl, asaasError });
   } catch (error: unknown) {
     console.error(error);
     const err = error as { code?: string; message?: string };

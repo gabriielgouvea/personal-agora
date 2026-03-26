@@ -163,10 +163,11 @@ function CadastroPersonalContent() {
   const searchParams = useSearchParams();
   const [step, setStep] = useState(0);
   const [done, setDone] = useState(false);
+  const [asaasAviso, setAsaasAviso] = useState<string | null>(null);
   const [loadingCep, setLoadingCep] = useState(false);
   const [phoneError, setPhoneError] = useState("");
   const [apiError, setApiError] = useState("");
-  const [billingType, setBillingType] = useState<"PIX" | "CREDIT_CARD" | "">("");
+  const [billingType, setBillingType] = useState<"PIX" | "CREDIT_CARD" | "">();
 
   /* uploads locais (preview) */
   const [fotoCref, setFotoCref] = useState<File | null>(null);
@@ -309,7 +310,7 @@ function CadastroPersonalContent() {
       }
 
       // Upload de arquivos se houver
-      const { id, paymentUrl } = await res.json();
+      const { id, paymentUrl, asaasError } = await res.json();
       if (fotoCref || selfie) {
         const formData = new FormData();
         if (fotoCref) formData.append("fotoCref", fotoCref);
@@ -320,12 +321,16 @@ function CadastroPersonalContent() {
         }).catch(() => {}); // upload é best-effort
       }
 
-      // Se há link de pagamento (sem convite) → redirecionar para Asaas
+      // Se há link de pagamento → redirecionar para Asaas
       if (paymentUrl) {
         window.location.href = paymentUrl;
         return;
       }
 
+      // Cadastro ok mas Asaas falhou: avisa e mostra tela de sucesso com orientação
+      if (asaasError) {
+        setAsaasAviso(asaasError);
+      }
       setDone(true);
     } catch {
       setApiError("Erro de conexão. Tente novamente.");
@@ -636,10 +641,25 @@ function CadastroPersonalContent() {
             <Check className="w-10 h-10 text-black" />
           </div>
           <h1 className="text-3xl font-black uppercase italic tracking-tight mb-4">Cadastro enviado!</h1>
-          <p className="text-zinc-400 mb-8">
-            Nosso time vai analisar seus dados e aprovar seu perfil. Você receberá um e-mail assim que estiver
-            liberado para receber alunos.
-          </p>
+
+          {asaasAviso ? (
+            <div className="mb-6 p-4 rounded-xl bg-orange-500/10 border border-orange-500/30 text-left">
+              <p className="text-orange-400 text-sm font-bold mb-1">Pagamento pendente</p>
+              <p className="text-orange-300/80 text-xs leading-relaxed mb-2">
+                Seu cadastro foi recebido, mas não foi possível gerar o link de pagamento automaticamente.
+              </p>
+              <p className="text-zinc-500 text-xs italic">Detalhe: {asaasAviso}</p>
+              <p className="text-zinc-400 text-xs mt-2">
+                Após a aprovação do seu cadastro, acesse o <strong className="text-white">Dashboard → Assinatura</strong> para ativar seu plano.
+              </p>
+            </div>
+          ) : (
+            <p className="text-zinc-400 mb-8">
+              Nosso time vai analisar seus dados e aprovar seu perfil. Você receberá um e-mail assim que estiver
+              liberado para receber alunos.
+            </p>
+          )}
+
           <Link
             href="/"
             className="inline-flex items-center gap-2 px-6 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-full transition hover:scale-105 active:scale-95"

@@ -7,6 +7,7 @@ import {
   createAsaasSubscription,
   getSubscriptionPaymentUrl,
 } from "@/lib/asaas";
+import { isValidCPF } from "@/lib/utils";
 
 const schema = z.object({
   billingType: z.enum(["PIX", "CREDIT_CARD"]),
@@ -32,6 +33,12 @@ export async function POST(req: NextRequest) {
 
   if (!user) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   if (!user.cpf) return NextResponse.json({ error: "CPF não cadastrado" }, { status: 400 });
+  if (!isValidCPF(user.cpf)) {
+    return NextResponse.json(
+      { error: "O CPF cadastrado não é válido. Corrija seus dados pessoais antes de ativar a assinatura." },
+      { status: 422 }
+    );
+  }
 
   const body = await req.json();
   const result = schema.safeParse(body);
@@ -69,9 +76,17 @@ export async function POST(req: NextRequest) {
       data: { asaasCustomerId: customerId, asaasSubscriptionId: subscriptionId },
     });
 
+    if (!paymentUrl) {
+      return NextResponse.json(
+        { error: "Assinatura criada, mas não foi possível obter o link de pagamento. Aguarde alguns instantes e tente novamente." },
+        { status: 502 }
+      );
+    }
+
     return NextResponse.json({ paymentUrl });
   } catch (err) {
-    console.error("Erro ao ativar assinatura:", err);
-    return NextResponse.json({ error: "Erro ao criar assinatura. Tente novamente." }, { status: 500 });
+    const msg = err instanceof Error ? err.message : "Erro ao criar assinatura.";
+    console.error("Erro ao ativar assinatura:", msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
