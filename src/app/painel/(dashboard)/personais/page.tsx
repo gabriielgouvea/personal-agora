@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Search, ChevronLeft, ChevronRight, Eye, X, CheckCircle, XCircle } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Eye, X, CheckCircle, XCircle, ExternalLink, Download } from "lucide-react";
 
 interface User {
   id: string;
@@ -317,19 +317,75 @@ export default function PersonaisPage() {
 
                   {/* CREF / Selfie images */}
                   {(detail.fotoCrefUrl || detail.selfieUrl) && (
-                    <div className="grid grid-cols-2 gap-3">
-                      {detail.fotoCrefUrl && (
-                        <div>
-                          <p className="text-xs text-zinc-500 mb-1">Foto CREF</p>
-                          <img src={detail.fotoCrefUrl} alt="CREF" className="w-full rounded-lg border border-zinc-800" />
-                        </div>
-                      )}
-                      {detail.selfieUrl && (
-                        <div>
-                          <p className="text-xs text-zinc-500 mb-1">Selfie</p>
-                          <img src={detail.selfieUrl} alt="Selfie" className="w-full rounded-lg border border-zinc-800" />
-                        </div>
-                      )}
+                    <div className="space-y-3">
+                      <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Documentos enviados</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        {detail.fotoCrefUrl && (
+                          <div className="space-y-1.5">
+                            <p className="text-xs text-zinc-500">Foto do CREF</p>
+                            <a href={detail.fotoCrefUrl} target="_blank" rel="noopener noreferrer">
+                              <img
+                                src={detail.fotoCrefUrl}
+                                alt="CREF"
+                                className="w-full rounded-lg border border-zinc-700 hover:border-yellow-500 transition cursor-pointer object-cover"
+                                style={{ maxHeight: 160 }}
+                              />
+                            </a>
+                            <div className="flex gap-1.5">
+                              <a
+                                href={detail.fotoCrefUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex-1 flex items-center justify-center gap-1 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-1.5 rounded-lg transition"
+                              >
+                                <ExternalLink size={12} /> Ver
+                              </a>
+                              <a
+                                href={detail.fotoCrefUrl}
+                                download="foto-cref"
+                                className="flex-1 flex items-center justify-center gap-1 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-1.5 rounded-lg transition"
+                              >
+                                <Download size={12} /> Baixar
+                              </a>
+                            </div>
+                          </div>
+                        )}
+                        {detail.selfieUrl && (
+                          <div className="space-y-1.5">
+                            <p className="text-xs text-zinc-500">Selfie</p>
+                            <a href={detail.selfieUrl} target="_blank" rel="noopener noreferrer">
+                              <img
+                                src={detail.selfieUrl}
+                                alt="Selfie"
+                                className="w-full rounded-lg border border-zinc-700 hover:border-yellow-500 transition cursor-pointer object-cover"
+                                style={{ maxHeight: 160 }}
+                              />
+                            </a>
+                            <div className="flex gap-1.5">
+                              <a
+                                href={detail.selfieUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex-1 flex items-center justify-center gap-1 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-1.5 rounded-lg transition"
+                              >
+                                <ExternalLink size={12} /> Ver
+                              </a>
+                              <a
+                                href={detail.selfieUrl}
+                                download="selfie"
+                                className="flex-1 flex items-center justify-center gap-1 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-1.5 rounded-lg transition"
+                              >
+                                <Download size={12} /> Baixar
+                              </a>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {!detail.fotoCrefUrl && !detail.selfieUrl && (
+                    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-center">
+                      <p className="text-zinc-500 text-xs">Nenhum documento enviado</p>
                     </div>
                   )}
 
