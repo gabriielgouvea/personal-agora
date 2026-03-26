@@ -711,10 +711,13 @@ function CadastroPersonalContent() {
                 </div>
                 {phoneError && <p className={errorCls}>{phoneError}</p>}
               </div>
+
+              <hr className="border-zinc-800" />
+              <RegionSearchTest />
             </div>
           )}
 
-          {/* ╔══════════ STEP 2 — Pessoal & Endereço ══════════╗ */}
+          {/* ╔══════════ STEP 2 — Pessoal & Endereço ══════════╗ */
           {step === 1 && (
             <div className="space-y-5 animate-in fade-in duration-300">
               <div className="grid grid-cols-2 gap-4">
@@ -806,13 +809,10 @@ function CadastroPersonalContent() {
                   <input {...register("complemento")} className={inputCls} placeholder="Apto, bloco..." />
                 </div>
               </div>
-
-              <hr className="border-zinc-800" />
-              <RegionSearchTest />
             </div>
           )}
 
-          {/* ╔══════════ STEP 3 — Documentos ══════════╗ */}
+          {/* ╔══════════ STEP 3 — Documentos ══════════╗ */
           {step === 2 && (
             <div className="space-y-5 animate-in fade-in duration-300">
               <div className="grid grid-cols-2 gap-4">
