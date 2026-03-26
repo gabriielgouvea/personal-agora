@@ -37,6 +37,10 @@ export async function GET() {
     numero: user.numero,
     complemento: user.complemento,
     avatarUrl: user.avatarUrl || null,
+    disponibilidade: user.disponibilidade || null,
+    modalidades: user.modalidades || null,
+    regioes: user.regioes || null,
+    plano: user.plano || null,
   });
 }
 
@@ -54,7 +58,7 @@ export async function PATCH(request: Request) {
     "nome", "sobrenome", "email", "telefone",
     "isWhatsapp", "isTelefone", "dataNascimento", "sexo",
     "cep", "rua", "bairro", "cidade", "estado",
-    "numero", "complemento", "avatarUrl",
+    "numero", "complemento", "avatarUrl", "disponibilidade",
   ];
   for (const f of fields) {
     if (body[f] !== undefined) allowed[f] = body[f];

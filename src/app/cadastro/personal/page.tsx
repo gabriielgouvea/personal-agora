@@ -52,6 +52,24 @@ const MODALIDADES = [
   "Preparação Física",
 ];
 
+/* ── Dias da semana ── */
+const DIAS_SEMANA = [
+  { key: "seg", label: "Segunda" },
+  { key: "ter", label: "Terça" },
+  { key: "qua", label: "Quarta" },
+  { key: "qui", label: "Quinta" },
+  { key: "sex", label: "Sexta" },
+  { key: "sab", label: "Sábado" },
+  { key: "dom", label: "Domingo" },
+] as const;
+
+const HORARIOS = [
+  "05:00","06:00","07:00","08:00","09:00","10:00","11:00","12:00",
+  "13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00","22:00",
+];
+
+type Disponibilidade = Record<string, string[]>;
+
 /* ── Schema ── */
 const schema = z
   .object({
@@ -87,6 +105,7 @@ const schema = z
     preferenciaGeneroAluno: z.string().min(1, "Selecione uma opção"),
     disponivelEmCasa: z.boolean(),
     valorAproximado: z.string().min(1, "Informe um valor"),
+    disponibilidade: z.string().min(2, "Selecione ao menos um horário"),
     /* 5 — Plano & Financeiro */
     plano: z.string().min(1, "Selecione um plano"),
     tipoChavePix: z.string().min(1, "Selecione"),
@@ -116,7 +135,7 @@ const STEP_FIELDS: (keyof FormData)[][] = [
   ["nome", "sobrenome", "email", "senha", "confirmarSenha", "telefone"],
   ["dataNascimento", "sexo", "cpf", "cep", "numero"],
   ["cref", "validadeCref", "formacao", "rg"],
-  ["modalidades", "regioes", "preferenciaGeneroAluno", "valorAproximado"],
+  ["modalidades", "regioes", "preferenciaGeneroAluno", "valorAproximado", "disponibilidade"],
   ["plano", "tipoChavePix", "chavePix", "confirmaPixProprio", "aceitaTaxa"],
 ];
 
@@ -165,6 +184,11 @@ function CadastroPersonalContent() {
   const [regOpen, setRegOpen] = useState(false);
   const regRef = useRef<HTMLDivElement>(null);
 
+  /* disponibilidade */
+  const [disp, setDisp] = useState<Disponibilidade>({
+    seg: [], ter: [], qua: [], qui: [], sex: [], sab: [], dom: [],
+  });
+
   /* convite / cupom */
   const [showConvite, setShowConvite] = useState(false);
   const [showCupom, setShowCupom] = useState(searchParams.get("cupom") === "1");
@@ -209,6 +233,7 @@ function CadastroPersonalContent() {
       codigoConvite: "",
       codigoCupom: "",
       plano: "",
+      disponibilidade: "",
       confirmaPixProprio: false as unknown as true,
       aceitaTaxa: false as unknown as true,
     },
@@ -360,6 +385,30 @@ function CadastroPersonalContent() {
     } else {
       setValue("modalidades", [...cur, m], { shouldValidate: true });
     }
+  }
+
+  /* ── Disponibilidade toggle ── */
+  function toggleHorario(dia: string, horario: string) {
+    setDisp((prev) => {
+      const cur = prev[dia] || [];
+      const next = cur.includes(horario) ? cur.filter((h) => h !== horario) : [...cur, horario].sort();
+      const updated = { ...prev, [dia]: next };
+      // Serializar para o campo do form
+      const hasAny = Object.values(updated).some((arr) => arr.length > 0);
+      setValue("disponibilidade", hasAny ? JSON.stringify(updated) : "", { shouldValidate: true });
+      return updated;
+    });
+  }
+
+  function toggleDiaInteiro(dia: string) {
+    setDisp((prev) => {
+      const cur = prev[dia] || [];
+      const next = cur.length === HORARIOS.length ? [] : [...HORARIOS];
+      const updated = { ...prev, [dia]: next };
+      const hasAny = Object.values(updated).some((arr) => arr.length > 0);
+      setValue("disponibilidade", hasAny ? JSON.stringify(updated) : "", { shouldValidate: true });
+      return updated;
+    });
   }
 
   /* ── Validar convite ── */
@@ -1095,6 +1144,62 @@ function CadastroPersonalContent() {
                   Na hora de atender, você define o preço final com total autonomia, considerando dia, horário
                   e tipo de aula.
                 </p>
+              </div>
+
+              {/* Disponibilidade de horários */}
+              <div>
+                <label className={labelCls}>Dias e horários disponíveis</label>
+                <div className="p-4 rounded-lg bg-amber-500/5 border border-amber-500/20 mb-4">
+                  <p className="text-amber-400 text-xs leading-relaxed">
+                    <strong>Importante:</strong> mantenha seus dias e horários sempre atualizados.
+                    Quando um aluno buscar um dia/horário específico, só aparecerão os personais com disponibilidade naquele momento.
+                    Se não estiver atualizado, você não aparecerá na busca.
+                  </p>
+                  <p className="text-zinc-500 text-xs mt-2">
+                    Você poderá alterar sua disponibilidade quantas vezes quiser depois do cadastro, no seu painel.
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  {DIAS_SEMANA.map(({ key, label }) => {
+                    const selected = disp[key] || [];
+                    const allSelected = selected.length === HORARIOS.length;
+                    return (
+                      <div key={key} className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-white">{label}</span>
+                          <button
+                            type="button"
+                            onClick={() => toggleDiaInteiro(key)}
+                            className={`text-xs px-2 py-1 rounded transition ${
+                              allSelected
+                                ? "bg-yellow-500/20 text-yellow-500"
+                                : "bg-zinc-800 text-zinc-500 hover:text-zinc-300"
+                            }`}
+                          >
+                            {allSelected ? "Limpar" : "Dia todo"}
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {HORARIOS.map((h) => (
+                            <button
+                              key={h}
+                              type="button"
+                              onClick={() => toggleHorario(key, h)}
+                              className={`px-2 py-1 rounded text-xs font-medium transition ${
+                                selected.includes(h)
+                                  ? "bg-yellow-500/20 border border-yellow-500/40 text-yellow-500"
+                                  : "bg-zinc-800 border border-zinc-700 text-zinc-500 hover:border-zinc-600"
+                              }`}
+                            >
+                              {h}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {errors.disponibilidade && <p className={errorCls}>{errors.disponibilidade.message}</p>}
               </div>
             </div>
           )}

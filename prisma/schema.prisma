@@ -77,6 +77,7 @@ model User {
   modalidades      String?  // JSON array: ["musculação","funcional",...]
   regioes          String?  // JSON array: ["Alphaville","Tamboré",...]
   preferenciaGeneroAluno String? // "homens" | "mulheres" | "ambos"
+  disponibilidade  String?  // JSON: {"seg":["06:00-08:00"],"ter":[],...}
   verificado       Boolean @default(false)
 
   // Plano
