@@ -15,7 +15,10 @@ export async function GET(req: NextRequest) {
   const limit = parseInt(url.get("limit") || "20");
 
   const where: Record<string, unknown> = {};
-  if (tipo) where.tipo = tipo;
+  if (tipo) {
+    // "personal" deve incluir quem também tem perfil de aluno (tipo=ambos)
+    where.tipo = tipo === "personal" ? { in: ["personal", "ambos"] } : tipo;
+  }
   if (status) where.status = status;
   if (sexo) where.sexo = sexo;
   if (busca) {
