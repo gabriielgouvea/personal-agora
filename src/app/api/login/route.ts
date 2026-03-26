@@ -24,6 +24,14 @@ export async function POST(request: Request) {
       );
     }
 
+    // Usuário cadastrado só pelo Google não tem senha
+    if (!user.senha) {
+      return NextResponse.json(
+        { error: "Esta conta usa login com Google. Clique em \"Entrar com Google\"." },
+        { status: 401 }
+      );
+    }
+
     const passwordValid = await verifyPassword(senha, user.senha);
     if (!passwordValid) {
       return NextResponse.json(
