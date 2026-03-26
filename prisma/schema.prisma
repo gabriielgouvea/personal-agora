@@ -93,6 +93,10 @@ model User {
   asaasCustomerId     String?
   asaasSubscriptionId String?
 
+  // Cancelamento
+  cancelamentoMotivo   String?
+  cancelamentoPedidoEm DateTime?
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }

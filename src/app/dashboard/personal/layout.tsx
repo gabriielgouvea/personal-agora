@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   User,
   Calendar,
-  Settings,
+  CreditCard,
   LogOut,
   ChevronDown,
   Menu,
@@ -16,6 +16,7 @@ import {
 const NAV_ITEMS = [
   { label: "Início", href: "/dashboard/personal", icon: User },
   { label: "Meus Horários", href: "/dashboard/personal/horarios", icon: Calendar },
+  { label: "Assinatura", href: "/dashboard/personal/assinatura", icon: CreditCard },
 ];
 
 interface UserSession {
