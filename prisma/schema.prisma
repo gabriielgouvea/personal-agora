@@ -41,13 +41,15 @@ model User {
   nome           String
   sobrenome      String
   email          String   @unique
-  senha          String
-  telefone       String   @unique
+  senha          String?
+  googleId       String?  @unique
+  avatarGoogleUrl String?
+  telefone       String?  @unique
   isWhatsapp     Boolean  @default(false)
   isTelefone     Boolean  @default(false)
   dataNascimento String?
   sexo           String?
-  cpf            String   @unique
+  cpf            String?  @unique
   cep            String?
   rua            String?
   bairro         String?
