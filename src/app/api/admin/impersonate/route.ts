@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { SignJWT } from "jose";
 import prisma from "@/lib/prisma";
 import { getAdminSession } from "@/lib/admin-auth";
-import { SESSION_SECRET } from "@/lib/auth";
+import { getSecret } from "@/lib/auth";
 
 // POST /api/admin/impersonate
 // Body: { userId: string, tipoVisao: "aluno" | "personal" }
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   })
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("15m")
-    .sign(SESSION_SECRET);
+    .sign(getSecret());
 
   console.log(
     `[IMPERSONATE] Admin ${adminSession.email} gerou token para ${tipoVisao} userId=${user.id} (${user.email}) em ${new Date().toISOString()}`

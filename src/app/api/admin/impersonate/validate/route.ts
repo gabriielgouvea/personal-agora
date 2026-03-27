@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
-import { createSession } from "@/lib/auth";
-
-const SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "personal-agora-secret-key-change-in-prod"
-);
+import { createSession, getSecret } from "@/lib/auth";
 
 // POST /api/admin/impersonate/validate
 // Body: { token: string }
@@ -14,7 +10,7 @@ export async function POST(req: NextRequest) {
   if (!token) return NextResponse.json({ error: "Token obrigatório" }, { status: 400 });
 
   try {
-    const { payload } = await jwtVerify(token, SECRET);
+    const { payload } = await jwtVerify(token, getSecret());
 
     if (!payload.impersonate) {
       return NextResponse.json({ error: "Token inválido" }, { status: 400 });

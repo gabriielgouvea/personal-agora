@@ -2,14 +2,13 @@ import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
-if (!process.env.JWT_SECRET) {
-  throw new Error("JWT_SECRET não definido. Configure a variável de ambiente.");
+export function getSecret() {
+  const key = process.env.JWT_SECRET;
+  if (!key) throw new Error("JWT_SECRET não definido. Configure a variável de ambiente.");
+  return new TextEncoder().encode(key);
 }
 
-const SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
-
 export const SESSION_COOKIE_NAME = "pa_session";
-export const SESSION_SECRET = SECRET;
 
 const COOKIE_NAME = SESSION_COOKIE_NAME;
 
@@ -38,7 +37,7 @@ export async function createSession(payload: SessionPayload) {
   const token = await new SignJWT(payload as unknown as Record<string, unknown>)
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("30d")
-    .sign(SECRET);
+    .sign(getSecret());
 
   const cookieStore = await cookies();
   cookieStore.set(COOKIE_NAME, token, {
@@ -56,7 +55,7 @@ export async function getSession(): Promise<SessionPayload | null> {
   if (!token) return null;
 
   try {
-    const { payload } = await jwtVerify(token, SECRET);
+    const { payload } = await jwtVerify(token, getSecret());
     return payload as unknown as SessionPayload;
   } catch {
     return null;

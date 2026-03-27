@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { SignJWT } from "jose";
 import prisma from "@/lib/prisma";
 import { getAdminSession } from "@/lib/admin-auth";
-import { SESSION_SECRET, SESSION_COOKIE_NAME } from "@/lib/auth";
+import { getSecret, SESSION_COOKIE_NAME } from "@/lib/auth";
 
 // GET /api/admin/impersonate/direct?userId=...&tipo=aluno|personal
 // Verifica sessão admin, cria sessão de usuário e redireciona ao dashboard
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
   })
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("8h")
-    .sign(SESSION_SECRET);
+    .sign(getSecret());
 
   console.log(
     `[IMPERSONATE] Admin ${adminSession.email} entrou como ${tipo} userId=${user.id} (${user.email}) em ${new Date().toISOString()}`
