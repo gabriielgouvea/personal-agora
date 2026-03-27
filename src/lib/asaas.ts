@@ -161,6 +161,61 @@ export async function getPaymentStatus(paymentId: string): Promise<{ status: str
   return { status: payment.status };
 }
 
+export interface CreditCardData {
+  holderName: string;
+  number: string;
+  expiryMonth: string;
+  expiryYear: string;
+  ccv: string;
+}
+
+export interface CreditCardHolderInfo {
+  name: string;
+  email: string;
+  cpfCnpj: string;
+  postalCode: string;
+  addressNumber: string;
+  phone: string;
+}
+
+export interface CardChargeResult {
+  id: string;
+  status: string; // CONFIRMED, RECEIVED, PENDING, etc.
+  invoiceUrl: string | null;
+}
+
+export async function createAsaasCardCharge(
+  customerId: string,
+  value: number,
+  dueDate: string,
+  description: string,
+  externalReference: string,
+  creditCard: CreditCardData,
+  creditCardHolderInfo: CreditCardHolderInfo,
+  installmentCount?: number,
+): Promise<CardChargeResult> {
+  const body: Record<string, unknown> = {
+    customer: customerId,
+    billingType: "CREDIT_CARD",
+    value,
+    dueDate,
+    description,
+    externalReference,
+    creditCard,
+    creditCardHolderInfo,
+  };
+  if (installmentCount && installmentCount > 1) {
+    body.installmentCount = installmentCount;
+    body.installmentValue = parseFloat((value / installmentCount).toFixed(2));
+  }
+  const charge = await asaasReq<{ id: string; status: string; invoiceUrl?: string | null }>(
+    "/payments",
+    "POST",
+    body
+  );
+  return { id: charge.id, status: charge.status, invoiceUrl: charge.invoiceUrl ?? null };
+}
+
 export async function getPaymentCheckoutUrl(
   paymentId: string,
   billingType: "CREDIT_CARD" | "PIX"

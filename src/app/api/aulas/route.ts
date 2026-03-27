@@ -72,7 +72,13 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Criar cobrança no Asaas
+  // Para CREDIT_CARD transparente, retorna apenas a aula — 
+  // o pagamento será feito via /api/aulas/[id]/pagar-cartao com os dados do cartão.
+  if (billingType === "CREDIT_CARD") {
+    return NextResponse.json({ aulaId: aula.id });
+  }
+
+  // Criar cobrança no Asaas (PIX / BOLETO / UNDEFINED)
   const dueDate = new Date();
   dueDate.setDate(dueDate.getDate() + 1);
   const dueDateStr = dueDate.toISOString().split("T")[0];

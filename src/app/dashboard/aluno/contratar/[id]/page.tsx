@@ -92,6 +92,25 @@ export default function ContratarPage() {
   const [copiado, setCopiado] = useState(false);
   const [pixStatus, setPixStatus] = useState<string>("aguardando_pagamento");
 
+  // Cartão de crédito state
+  const [cardForm, setCardForm] = useState({
+    holderName: "",
+    number: "",
+    expiryMonth: "",
+    expiryYear: "",
+    ccv: "",
+    cpf: "",
+    cep: "",
+    addressNumber: "",
+    phone: "",
+  });
+  const [installments, setInstallments] = useState(1);
+  const [cardResult, setCardResult] = useState<{
+    success: boolean;
+    status: string;
+    aulaId: string;
+  } | null>(null);
+
   useEffect(() => {
     fetch(`/api/personais/${personalId}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
@@ -127,10 +146,19 @@ export default function ContratarPage() {
     setTimeout(() => setCopiado(false), 3000);
   }
 
+  function handleCardInput(field: string, value: string) {
+    setCardForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function formatCardNumber(v: string) {
+    return v.replace(/\D/g, "").slice(0, 16).replace(/(\d{4})(?=\d)/g, "$1 ");
+  }
+
   async function handleContratar() {
     setContratando(true);
     setError("");
     try {
+      // 1. Cria aula
       const res = await fetch("/api/aulas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -142,17 +170,65 @@ export default function ContratarPage() {
         return;
       }
 
-      // Se cartão, redireciona para Asaas (por enquanto)
       if (billingType === "CREDIT_CARD") {
-        if (data.paymentUrl) {
-          window.location.href = data.paymentUrl;
-        } else {
-          router.push("/dashboard/aluno/aulas");
+        // 2a. Paga com cartão
+        const cardNum = cardForm.number.replace(/\s/g, "");
+        if (cardNum.length < 13 || cardNum.length > 19) {
+          setError("Número do cartão inválido.");
+          return;
+        }
+        if (!cardForm.holderName.trim()) {
+          setError("Nome do titular obrigatório.");
+          return;
+        }
+        if (!cardForm.expiryMonth || !cardForm.expiryYear) {
+          setError("Data de validade obrigatória.");
+          return;
+        }
+        if (cardForm.ccv.length < 3) {
+          setError("CVV inválido.");
+          return;
+        }
+        if (cardForm.cpf.replace(/\D/g, "").length !== 11) {
+          setError("CPF do titular inválido.");
+          return;
+        }
+
+        const cardRes = await fetch(`/api/aulas/${data.aulaId}/pagar-cartao`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            creditCard: {
+              holderName: cardForm.holderName.trim(),
+              number: cardNum,
+              expiryMonth: cardForm.expiryMonth,
+              expiryYear: cardForm.expiryYear,
+              ccv: cardForm.ccv,
+            },
+            installmentCount: installments > 1 ? installments : undefined,
+          }),
+        });
+        const cardData = await cardRes.json();
+        if (!cardRes.ok) {
+          setError(cardData.error || "Erro ao processar cartão.");
+          return;
+        }
+
+        setCardResult({
+          success: cardData.paid || cardData.status === "CONFIRMED" || cardData.status === "RECEIVED",
+          status: cardData.status,
+          aulaId: data.aulaId,
+        });
+
+        if (cardData.paid) {
+          setTimeout(() => {
+            router.push(`/dashboard/aluno/aulas/sucesso?aulaId=${data.aulaId}`);
+          }, 2500);
         }
         return;
       }
 
-      // Se PIX, busca o QR Code
+      // 2b. PIX — busca QR Code
       const pixRes = await fetch(`/api/aulas/${data.aulaId}/pix`);
       const pixJson = await pixRes.json();
       if (!pixRes.ok) {
@@ -346,8 +422,35 @@ export default function ContratarPage() {
           </div>
         )}
 
-        {/* Resumo da compra — só mostra se PIX NÃO está exibido */}
-        {personal && !pixData && (
+        {/* Cartão — Resultado */}
+        {cardResult && (
+          <div className={`bg-zinc-900 border rounded-2xl p-8 text-center ${
+            cardResult.success ? "border-green-500/30" : "border-yellow-500/30"
+          }`}>
+            {cardResult.success ? (
+              <>
+                <CheckCircle2 className="w-16 h-16 text-green-400 mx-auto mb-4" />
+                <h3 className="font-bold text-2xl text-green-400 mb-2">Pagamento aprovado!</h3>
+                <p className="text-zinc-400">Redirecionando...</p>
+              </>
+            ) : (
+              <>
+                <Clock className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
+                <h3 className="font-bold text-2xl text-yellow-400 mb-2">Pagamento em processamento</h3>
+                <p className="text-zinc-400 text-sm">Seu pagamento está sendo analisado. Você será notificado quando for confirmado.</p>
+                <button
+                  onClick={() => router.push("/dashboard/aluno/aulas")}
+                  className="mt-4 px-6 py-2 bg-zinc-800 rounded-xl text-sm hover:bg-zinc-700 transition"
+                >
+                  Ver minhas aulas
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Resumo da compra — só mostra se PIX NÃO está exibido e cartão não processado */}
+        {personal && !pixData && !cardResult && (
           <div className="bg-zinc-900 border border-yellow-500/30 rounded-2xl p-6">
             <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-yellow-500" />
@@ -395,6 +498,159 @@ export default function ContratarPage() {
               </div>
             </div>
 
+            {/* Formulário do cartão de crédito */}
+            {billingType === "CREDIT_CARD" && (
+              <div className="mt-5 space-y-4 border-t border-zinc-800 pt-5">
+                <p className="text-sm font-semibold text-zinc-300 flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-green-400" />
+                  Dados do cartão
+                </p>
+
+                {/* Número do cartão */}
+                <div>
+                  <label className="text-xs text-zinc-500 mb-1 block">Número do cartão</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="0000 0000 0000 0000"
+                    value={cardForm.number}
+                    onChange={(e) => handleCardInput("number", formatCardNumber(e.target.value))}
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:border-yellow-500 focus:outline-none transition"
+                  />
+                </div>
+
+                {/* Nome do titular */}
+                <div>
+                  <label className="text-xs text-zinc-500 mb-1 block">Nome do titular (como no cartão)</label>
+                  <input
+                    type="text"
+                    placeholder="NOME COMPLETO"
+                    value={cardForm.holderName}
+                    onChange={(e) => handleCardInput("holderName", e.target.value.toUpperCase())}
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:border-yellow-500 focus:outline-none transition"
+                  />
+                </div>
+
+                {/* Validade + CVV */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-xs text-zinc-500 mb-1 block">Mês</label>
+                    <select
+                      value={cardForm.expiryMonth}
+                      onChange={(e) => handleCardInput("expiryMonth", e.target.value)}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-3 text-sm text-white focus:border-yellow-500 focus:outline-none transition"
+                    >
+                      <option value="">MM</option>
+                      {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0")).map((m) => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-zinc-500 mb-1 block">Ano</label>
+                    <select
+                      value={cardForm.expiryYear}
+                      onChange={(e) => handleCardInput("expiryYear", e.target.value)}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-3 text-sm text-white focus:border-yellow-500 focus:outline-none transition"
+                    >
+                      <option value="">AAAA</option>
+                      {Array.from({ length: 10 }, (_, i) => String(new Date().getFullYear() + i)).map((y) => (
+                        <option key={y} value={y}>{y}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-zinc-500 mb-1 block">CVV</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="000"
+                      maxLength={4}
+                      value={cardForm.ccv}
+                      onChange={(e) => handleCardInput("ccv", e.target.value.replace(/\D/g, "").slice(0, 4))}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:border-yellow-500 focus:outline-none transition"
+                    />
+                  </div>
+                </div>
+
+                <p className="text-sm font-semibold text-zinc-300 mt-2">Dados do titular</p>
+
+                {/* CPF + Telefone */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-zinc-500 mb-1 block">CPF do titular</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="000.000.000-00"
+                      value={cardForm.cpf}
+                      onChange={(e) => handleCardInput("cpf", e.target.value.replace(/\D/g, "").slice(0, 11))}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:border-yellow-500 focus:outline-none transition"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-zinc-500 mb-1 block">Telefone</label>
+                    <input
+                      type="text"
+                      inputMode="tel"
+                      placeholder="11999999999"
+                      value={cardForm.phone}
+                      onChange={(e) => handleCardInput("phone", e.target.value.replace(/\D/g, "").slice(0, 11))}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:border-yellow-500 focus:outline-none transition"
+                    />
+                  </div>
+                </div>
+
+                {/* CEP + Número */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-zinc-500 mb-1 block">CEP</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="00000-000"
+                      value={cardForm.cep}
+                      onChange={(e) => handleCardInput("cep", e.target.value.replace(/\D/g, "").slice(0, 8))}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:border-yellow-500 focus:outline-none transition"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-zinc-500 mb-1 block">Número do endereço</label>
+                    <input
+                      type="text"
+                      placeholder="123"
+                      value={cardForm.addressNumber}
+                      onChange={(e) => handleCardInput("addressNumber", e.target.value)}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:border-yellow-500 focus:outline-none transition"
+                    />
+                  </div>
+                </div>
+
+                {/* Parcelas */}
+                {personal && (() => {
+                  const v = parseFloat(personal.valorAproximado?.replace(/[^0-9,\.]/g, "").replace(",", ".") ?? "0");
+                  const maxInstallments = Math.min(12, Math.floor(v / 10) || 1);
+                  if (maxInstallments <= 1) return null;
+                  return (
+                    <div>
+                      <label className="text-xs text-zinc-500 mb-1 block">Parcelas</label>
+                      <select
+                        value={installments}
+                        onChange={(e) => setInstallments(Number(e.target.value))}
+                        className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-3 text-sm text-white focus:border-yellow-500 focus:outline-none transition"
+                      >
+                        {Array.from({ length: maxInstallments }, (_, i) => i + 1).map((n) => (
+                          <option key={n} value={n}>
+                            {n === 1 ? "À vista" : `${n}x de R$ ${(v / n).toFixed(2).replace(".", ",")}`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
             {error && (
               <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
@@ -410,24 +666,19 @@ export default function ContratarPage() {
               {contratando ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Aguarde...
+                  Processando...
                 </>
               ) : billingType === "PIX" ? (
                 "Gerar PIX"
               ) : (
-                "Ir para pagamento"
+                "Pagar com cartão"
               )}
             </button>
-            {billingType === "CREDIT_CARD" && (
-              <p className="text-center text-xs text-zinc-600 mt-3">
-                Você será redirecionado para o ambiente seguro de pagamento Asaas.
-              </p>
-            )}
           </div>
         )}
 
-        {/* Vantagens de pagar pela plataforma — esconde quando PIX exibido */}
-        {!pixData && (
+        {/* Vantagens de pagar pela plataforma — esconde quando PIX/cartão exibido */}
+        {!pixData && !cardResult && (
         <div>
           <h3 className="font-bold text-lg mb-4 text-center">
             Por que pagar pela <span className="text-yellow-500">plataforma</span>?
@@ -462,7 +713,7 @@ export default function ContratarPage() {
         )}
 
         {/* Aviso de segurança */}
-        {!pixData && (
+        {!pixData && !cardResult && (
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 flex items-start gap-4">
           <ShieldCheck className="w-6 h-6 text-green-400 shrink-0 mt-0.5" />
           <div>
