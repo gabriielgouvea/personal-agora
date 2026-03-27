@@ -92,6 +92,10 @@ model User {
   asaasCustomerId     String?
   asaasSubscriptionId String?
 
+  // Redefinição de senha
+  resetToken       String?
+  resetTokenExpiry DateTime?
+
   // Cancelamento
   cancelamentoMotivo   String?
   cancelamentoPedidoEm DateTime?

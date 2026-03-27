@@ -1,4 +1,10 @@
-const BASE = process.env.ASAAS_URL || "https://api.asaas.com/v3";
+const isSandbox = process.env.ASAAS_SANDBOX === "true";
+const BASE = isSandbox
+  ? "https://sandbox.asaas.com/api/v3"
+  : (process.env.ASAAS_URL || "https://api.asaas.com/v3");
+const API_KEY = isSandbox
+  ? (process.env.ASAAS_SANDBOX_KEY ?? "")
+  : (process.env.ASAAS_API_KEY ?? "");
 
 const PLAN_VALUES: Record<string, number> = {
   start: 29.9,
@@ -11,7 +17,7 @@ async function asaasReq<T>(path: string, method: string, body?: object): Promise
     method,
     headers: {
       "Content-Type": "application/json",
-      access_token: process.env.ASAAS_API_KEY!,
+      access_token: API_KEY,
     },
     body: body ? JSON.stringify(body) : undefined,
   });

@@ -117,6 +117,15 @@ function LoginContent() {
             >
               {loading ? "Entrando..." : "Entrar"}
             </button>
+
+            <div className="text-center">
+              <Link
+                href="/login/esqueceu-senha"
+                className="text-xs text-zinc-500 hover:text-zinc-300 transition"
+              >
+                Esqueceu sua senha?
+              </Link>
+            </div>
           </form>
 
           <div className="relative my-5">
