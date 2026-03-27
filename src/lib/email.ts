@@ -1,6 +1,12 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD,
+  },
+});
 
 const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL || "https://personal-agora.vercel.app";
@@ -12,8 +18,8 @@ export async function sendPasswordResetEmail(
 ) {
   const resetUrl = `${APP_URL}/login/redefinir-senha?token=${token}`;
 
-  await resend.emails.send({
-    from: "Personal Agora <onboarding@resend.dev>",
+  await transporter.sendMail({
+    from: `"Personal Agora" <${process.env.GMAIL_USER}>`,
     to: email,
     subject: "Redefinição de senha - Personal Agora",
     html: `

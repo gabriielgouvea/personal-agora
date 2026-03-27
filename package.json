@@ -23,16 +23,17 @@
     "jose": "^6.2.2",
     "lucide-react": "^0.344.0",
     "next": "^14.2.35",
+    "nodemailer": "^8.0.4",
     "react": "^18",
     "react-dom": "^18",
     "react-hook-form": "^7.51.0",
-    "resend": "^6.9.4",
     "tailwind-merge": "^2.2.1",
     "uploadthing": "^7.7.4",
     "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/node": "^20",
+    "@types/nodemailer": "^7.0.11",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.0.1",
