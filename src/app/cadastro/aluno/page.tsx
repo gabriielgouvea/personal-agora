@@ -24,6 +24,7 @@ import {
   unmask,
   fetchAddressByCep,
 } from "@/lib/masks";
+import { isValidCPF } from "@/lib/utils";
 
 /* ── Placeholder academias (admin cadastra depois) ── */
 const ACADEMIAS = [
@@ -102,6 +103,8 @@ export default function CadastroAlunoPage() {
   const [done, setDone] = useState(false);
   const [loadingCep, setLoadingCep] = useState(false);
   const [phoneError, setPhoneError] = useState("");
+  const [phoneDupError, setPhoneDupError] = useState("");
+  const [cpfError, setCpfError] = useState("");
   const [apiError, setApiError] = useState("");
   const [duplicateInfo, setDuplicateInfo] = useState<{
     field: string;
@@ -205,6 +208,34 @@ export default function CadastroAlunoPage() {
       setValue("estado", addr.estado);
     }
     setLoadingCep(false);
+  }
+
+  /* ── Validação de telefone duplicado (on blur) ── */
+  async function handlePhoneBlur() {
+    setPhoneDupError("");
+    const tel = w.telefone;
+    if (!tel || tel.length < 14) return;
+    try {
+      const res = await fetch("/api/cadastro/verificar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ campo: "telefone", valor: tel }),
+      });
+      const data = await res.json();
+      if (data.existe) {
+        setPhoneDupError("Este telefone já pertence a uma conta.");
+      }
+    } catch { /* silencioso */ }
+  }
+
+  /* ── Validação de CPF (dígitos verificadores + on blur) ── */
+  function handleCpfBlur() {
+    setCpfError("");
+    const cpf = w.cpf;
+    if (!cpf || unmask(cpf).length !== 11) return;
+    if (!isValidCPF(cpf)) {
+      setCpfError("CPF inválido. Verifique os números digitados.");
+    }
   }
 
   /* ── Toggles ── */
@@ -384,8 +415,15 @@ export default function CadastroAlunoPage() {
                   className={inputCls}
                   placeholder="(11) 91234-5678"
                   onChange={(e) => setValue("telefone", maskPhone(e.target.value))}
+                  onBlur={handlePhoneBlur}
                 />
                 {errors.telefone && <p className={errorCls}>{errors.telefone.message}</p>}
+                {phoneDupError && (
+                  <p className="text-yellow-400 text-xs mt-1 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    {phoneDupError}
+                  </p>
+                )}
 
                 <div className="flex gap-6 mt-3">
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -449,8 +487,15 @@ export default function CadastroAlunoPage() {
                   className={inputCls}
                   placeholder="000.000.000-00"
                   onChange={(e) => setValue("cpf", maskCPF(e.target.value))}
+                  onBlur={handleCpfBlur}
                 />
                 {errors.cpf && <p className={errorCls}>{errors.cpf.message}</p>}
+                {cpfError && (
+                  <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    {cpfError}
+                  </p>
+                )}
               </div>
 
               <hr className="border-zinc-800" />

@@ -22,6 +22,7 @@ import {
   Rocket,
   Star,
   Crown,
+  AlertTriangle,
 } from "lucide-react";
 import PasswordField from "@/components/PasswordField";
 import {
@@ -33,6 +34,7 @@ import {
   unmask,
   fetchAddressByCep,
 } from "@/lib/masks";
+import { isValidCPF } from "@/lib/utils";
 
 /* ── Modalidades disponíveis ── */
 const MODALIDADES = [
@@ -167,6 +169,8 @@ function CadastroPersonalContent() {
   const [asaasAviso, setAsaasAviso] = useState<string | null>(null);
   const [loadingCep, setLoadingCep] = useState(false);
   const [phoneError, setPhoneError] = useState("");
+  const [phoneDupError, setPhoneDupError] = useState("");
+  const [cpfInvalidError, setCpfInvalidError] = useState("");
   const [apiError, setApiError] = useState("");
   const [billingType, setBillingType] = useState<"PIX" | "CREDIT_CARD" | "">();
 
@@ -361,6 +365,11 @@ function CadastroPersonalContent() {
   async function checkCpf(value: string) {
     const clean = value.replace(/\D/g, "");
     if (clean.length !== 11) return;
+    setCpfInvalidError("");
+    if (!isValidCPF(value)) {
+      setCpfInvalidError("CPF inválido. Verifique os números digitados.");
+      return;
+    }
     setCpfChecking(true);
     setCpfWarning(null);
     try {
@@ -374,6 +383,24 @@ function CadastroPersonalContent() {
     } finally {
       setCpfChecking(false);
     }
+  }
+
+  /* ── Verificar telefone duplicado ── */
+  async function handlePhoneBlur() {
+    setPhoneDupError("");
+    const tel = w.telefone;
+    if (!tel || tel.length < 14) return;
+    try {
+      const res = await fetch("/api/cadastro/verificar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ campo: "telefone", valor: tel }),
+      });
+      const data = await res.json();
+      if (data.existe) {
+        setPhoneDupError("Este telefone já pertence a uma conta.");
+      }
+    } catch { /* silencioso */ }
   }
 
   /* ── Academia toggles ── */
@@ -820,8 +847,15 @@ function CadastroPersonalContent() {
                   className={inputCls}
                   placeholder="(11) 91234-5678"
                   onChange={(e) => setValue("telefone", maskPhone(e.target.value))}
+                  onBlur={handlePhoneBlur}
                 />
                 {errors.telefone && <p className={errorCls}>{errors.telefone.message}</p>}
+                {phoneDupError && (
+                  <p className="text-yellow-400 text-xs mt-1 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    {phoneDupError}
+                  </p>
+                )}
                 <div className="flex gap-6 mt-3">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -881,10 +915,17 @@ function CadastroPersonalContent() {
                     setValue("cpf", maskCPF(e.target.value));
                     setCpfWarning(null);
                     setCpfConfirmed(false);
+                    setCpfInvalidError("");
                   }}
                   onBlur={(e) => checkCpf(e.target.value)}
                 />
                 {errors.cpf && <p className={errorCls}>{errors.cpf.message}</p>}
+                {cpfInvalidError && (
+                  <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    {cpfInvalidError}
+                  </p>
+                )}
                 {cpfChecking && (
                   <p className="text-zinc-400 text-xs mt-1 flex items-center gap-1">
                     <Loader2 className="w-3 h-3 animate-spin inline" /> Verificando CPF...
