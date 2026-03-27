@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import {
+  sendAulaConfirmadaAluno,
+  sendAulaConfirmadaPersonal,
+  sendAulaConfirmadaAdmin,
+} from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,7 +28,52 @@ export async function POST(req: NextRequest) {
     // Pagamento confirmado ou recebido
     if (event === "PAYMENT_CONFIRMED" || event === "PAYMENT_RECEIVED") {
       const subscriptionId: string | null = payment.subscription ?? null;
+      const externalReference: string | null = payment.externalReference ?? null;
 
+      // ── Aula avulsa ──
+      if (externalReference && !subscriptionId) {
+        const aula = await prisma.aula.findUnique({
+          where: { id: externalReference },
+          include: {
+            aluno: { select: { id: true, nome: true, sobrenome: true, email: true } },
+            personal: { select: { id: true, nome: true, sobrenome: true, email: true } },
+          },
+        });
+
+        if (aula && aula.status === "aguardando_pagamento") {
+          await prisma.aula.update({
+            where: { id: aula.id },
+            data: { status: "paga" },
+          });
+
+          // Enviar emails paralelamente (erros silenciosos para não rejeitar o webhook)
+          Promise.all([
+            sendAulaConfirmadaAluno(
+              aula.aluno.email,
+              aula.aluno.nome,
+              aula.personal.nome,
+              aula.valor,
+              aula.id,
+            ),
+            sendAulaConfirmadaPersonal(
+              aula.personal.email,
+              aula.personal.nome,
+              `${aula.aluno.nome} ${aula.aluno.sobrenome}`,
+              aula.valor,
+              aula.id,
+            ),
+            sendAulaConfirmadaAdmin(
+              `${aula.aluno.nome} ${aula.aluno.sobrenome}`,
+              aula.personal.nome,
+              aula.personal.email,
+              aula.valor,
+              aula.id,
+            ),
+          ]).catch((e) => console.error("Email error:", e));
+        }
+      }
+
+      // ── Assinatura de plano ──
       if (subscriptionId) {
         const user = await prisma.user.findFirst({
           where: { asaasSubscriptionId: subscriptionId },

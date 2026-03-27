@@ -102,6 +102,27 @@ model User {
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  aulaComoAluno    Aula[]  @relation("AlunoAulas")
+  aulaComoPersonal Aula[]  @relation("PersonalAulas")
+}
+
+model Aula {
+  id              String   @id @default(uuid())
+  alunoId         String
+  personalId      String
+  aluno           User     @relation("AlunoAulas", fields: [alunoId], references: [id])
+  personal        User     @relation("PersonalAulas", fields: [personalId], references: [id])
+  valor           Float
+  // "aguardando_pagamento" | "paga" | "confirmada" | "cancelada" | "reembolsada"
+  status          String   @default("aguardando_pagamento")
+  asaasChargeId   String?
+  paymentUrl      String?
+  scheduledAt     DateTime?
+  confirmedAt     DateTime?  // aluno confirmou a realização da aula
+  releasedAt      DateTime?  // pagamento liberado ao personal
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model Admin {

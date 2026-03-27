@@ -118,6 +118,25 @@ export async function getSubscriptionPayments(subscriptionId: string): Promise<A
   return res.data;
 }
 
+export async function createAsaasCharge(
+  customerId: string,
+  value: number,
+  dueDate: string, // YYYY-MM-DD
+  description: string,
+  externalReference: string,
+  billingType: "PIX" | "CREDIT_CARD" | "BOLETO" | "UNDEFINED" = "UNDEFINED"
+): Promise<{ id: string; invoiceUrl: string | null }> {
+  const charge = await asaasReq<{ id: string; invoiceUrl?: string | null }>("/payments", "POST", {
+    customer: customerId,
+    billingType,
+    value,
+    dueDate,
+    description,
+    externalReference,
+  });
+  return { id: charge.id, invoiceUrl: charge.invoiceUrl ?? null };
+}
+
 export async function cancelAsaasSubscription(subscriptionId: string): Promise<void> {
   await asaasReq<{ deleted: boolean }>(`/subscriptions/${subscriptionId}`, "DELETE");
 }

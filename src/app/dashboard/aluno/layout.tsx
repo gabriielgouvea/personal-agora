@@ -15,6 +15,7 @@ import {
 const NAV_ITEMS = [
   { label: "Início", href: "/dashboard/aluno" },
   { label: "Buscar Personal", href: "/dashboard/aluno/buscar" },
+  { label: "Minhas Aulas", href: "/dashboard/aluno/aulas" },
 ];
 
 interface UserSession {

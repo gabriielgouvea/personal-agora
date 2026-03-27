@@ -43,6 +43,7 @@ export async function GET(req: NextRequest) {
       preferenciaGeneroAluno: true,
       telefone: true,
       isWhatsapp: true,
+      asaasCustomerId: true,
     },
     orderBy: { createdAt: "desc" },
     take: 100,

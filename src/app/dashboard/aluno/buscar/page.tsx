@@ -7,12 +7,11 @@ import {
   Building2,
   Dumbbell,
   Home,
-  MessageCircle,
   SlidersHorizontal,
   X,
   ChevronDown,
   ChevronUp,
-  User,
+  ShoppingBag,
 } from "lucide-react";
 
 const MODALIDADES = [
@@ -42,6 +41,7 @@ interface Personal {
   disponivelEmCasa: boolean;
   telefone: string | null;
   isWhatsapp: boolean;
+  asaasCustomerId: string | null;
 }
 
 function parseJson(val: string | null): string[] {
@@ -455,7 +455,7 @@ function PersonalCard({ personal: p }: { personal: Personal }) {
   const modalidades = parseJson(p.modalidades);
   const regioes = parseJson(p.regioes);
   const academias = parseJson(p.academias);
-  const initials = `${p.nome[0]}${p.sobrenome[0]}`.toUpperCase();
+  const initials = `${p.nome[0]}`.toUpperCase();
 
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden hover:border-zinc-700 transition group flex flex-col">
@@ -465,7 +465,7 @@ function PersonalCard({ personal: p }: { personal: Personal }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={p.avatarUrl}
-            alt={`${p.nome} ${p.sobrenome}`}
+            alt={p.nome}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
@@ -476,25 +476,20 @@ function PersonalCard({ personal: p }: { personal: Personal }) {
             <p className="text-xs text-zinc-600">Sem foto de perfil</p>
           </div>
         )}
-        {/* Badge em casa */}
-        {p.disponivelEmCasa && (
-          <span className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/90 text-white text-xs font-semibold">
-            <Home className="w-3 h-3" /> Em casa
+        {/* Preço no topo direito */}
+        {p.valorAproximado && (
+          <span className="absolute top-2 right-2 flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-sm text-yellow-400 text-xs font-bold border border-yellow-500/30">
+            R$ {p.valorAproximado}/hora aula
           </span>
         )}
       </div>
 
       {/* Info */}
       <div className="p-4 flex flex-col gap-3 flex-1">
-        {/* Nome */}
-        <div>
-          <h3 className="font-bold text-white text-base leading-tight">
-            {p.nome} {p.sobrenome}
-          </h3>
-          {p.valorAproximado && (
-            <p className="text-xs text-yellow-500 font-medium mt-0.5">{p.valorAproximado}/hora</p>
-          )}
-        </div>
+        {/* Primeiro nome apenas */}
+        <h3 className="font-bold text-white text-base leading-tight">
+          {p.nome}
+        </h3>
 
         {/* Modalidades */}
         {modalidades.length > 0 && (
@@ -531,24 +526,23 @@ function PersonalCard({ personal: p }: { personal: Personal }) {
           </div>
         )}
 
+        {/* Em casa badge */}
+        {p.disponivelEmCasa && (
+          <div className="flex items-center gap-1.5 text-xs text-green-400">
+            <Home className="w-3.5 h-3.5" />
+            <span>Disponível para aulas em casa</span>
+          </div>
+        )}
+
         {/* CTA */}
         <div className="mt-auto pt-2">
-          {p.isWhatsapp && p.telefone ? (
-            <a
-              href={whatsappLink(p.telefone, p.nome)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-green-600 hover:bg-green-500 text-white text-sm font-bold rounded-xl transition"
-            >
-              <MessageCircle className="w-4 h-4" />
-              Entrar em Contato
-            </a>
-          ) : (
-            <div className="w-full flex items-center justify-center gap-2 py-2.5 bg-zinc-800 text-zinc-500 text-sm rounded-xl cursor-not-allowed">
-              <User className="w-4 h-4" />
-              Contato indisponível
-            </div>
-          )}
+          <a
+            href={`/dashboard/aluno/contratar/${p.id}`}
+            className="w-full flex items-center justify-center gap-2 py-2.5 bg-yellow-500 hover:bg-yellow-400 text-black text-sm font-bold rounded-xl transition"
+          >
+            <ShoppingBag className="w-4 h-4" />
+            Contratar Aula
+          </a>
         </div>
       </div>
     </div>
