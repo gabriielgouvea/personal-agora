@@ -99,7 +99,7 @@ export default function PersonalPage() {
               {
                 icon: Megaphone,
                 title: "Tráfego Pago",
-                desc: "Investimos em anúncios para atrair alunos da região de Alphaville diretamente para a plataforma. Você aparece nos resultados.",
+                desc: "Investimos em anúncios para atrair alunos diretamente para a plataforma. Você aparece nos resultados.",
               },
               {
                 icon: Handshake,
@@ -458,7 +458,7 @@ export default function PersonalPage() {
             Lote sua <span className="text-yellow-500">agenda</span>
           </h2>
           <p className="text-zinc-400 text-lg mb-10">
-            Cadastre-se gratuitamente e esteja entre os primeiros personais da plataforma em Alphaville.
+            Cadastre-se gratuitamente e esteja entre os primeiros personais da plataforma.
           </p>
           <Link
             href="/cadastro/personal"

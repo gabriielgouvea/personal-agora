@@ -58,7 +58,7 @@ export default function AlunoPage() {
           </h1>
 
           <p className="text-lg md:text-xl text-zinc-400 max-w-2xl leading-relaxed">
-            Busque por academia ou região em Alphaville, veja os profissionais disponíveis e agende sua aula —
+            Busque por academia ou região, veja os profissionais disponíveis e agende sua aula —
             tudo com pagamento seguro pela plataforma.
           </p>
         </div>
@@ -206,7 +206,7 @@ export default function AlunoPage() {
               {
                 icon: MapPin,
                 title: "Perto de Você",
-                desc: "Filtre por academia ou bairro em Alphaville. Sem deslocamento longe.",
+                desc: "Filtre por academia ou bairro na sua região. Sem deslocamento longe.",
               },
               {
                 icon: Dumbbell,

@@ -5,9 +5,9 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Personal Agora — Encontre seu Personal Trainer em Alphaville",
+  title: "Personal Agora — Encontre seu Personal Trainer",
   description:
-    "Plataforma que conecta alunos a personal trainers verificados na região de Alphaville. Busque por academia ou região, agende aulas avulsas ou planos mensais com pagamento seguro.",
+    "Plataforma que conecta alunos a personal trainers verificados. Busque por academia ou região, agende aulas avulsas ou planos mensais com pagamento seguro.",
 };
 
 export default function RootLayout({

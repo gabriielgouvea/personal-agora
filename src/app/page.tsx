@@ -46,7 +46,7 @@ export default function LandingPage() {
         <div className="container mx-auto max-w-5xl text-center z-10 relative">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-xs font-bold uppercase tracking-widest mb-8">
             <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
-            PLATAFORMA ABERTA — ALPHAVILLE
+            PLATAFORMA ABERTA
           </div>
 
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter text-white mb-6 uppercase italic leading-[0.9] md:leading-[0.85]">
@@ -103,7 +103,7 @@ export default function LandingPage() {
               <h3 className="text-xl font-bold text-white mb-3">Busque</h3>
               <p className="text-zinc-400 leading-relaxed">
                 Pesquise por <strong className="text-zinc-200">academia</strong> (ex: Ironberg, Bluefit) ou por{" "}
-                <strong className="text-zinc-200">região</strong> em Alphaville. Veja todos os profissionais
+                <strong className="text-zinc-200">região</strong>. Veja todos os profissionais
                 disponíveis com foto, descrição e avaliações.
               </p>
             </div>
@@ -168,7 +168,7 @@ export default function LandingPage() {
               {
                 icon: MapPin,
                 title: "Busca por Local",
-                desc: "Filtre por academia ou bairro em Alphaville e encontre quem está perto de você.",
+                desc: "Filtre por academia ou bairro e encontre quem está perto de você.",
               },
               {
                 icon: Clock,

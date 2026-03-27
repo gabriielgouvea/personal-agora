@@ -420,7 +420,7 @@ export default function RegistrationForm() {
         {/* Academias */}
         <div>
           <label className="block text-sm font-medium text-zinc-300 mb-1">
-            Quais academias você está disponível em Alphaville? 
+            Quais academias você está disponível? 
             <span className="block text-zinc-500 text-xs font-normal">
                 (Cite apenas as que você é devidamente cadastrado e tem uniforme)
             </span>
@@ -443,7 +443,7 @@ export default function RegistrationForm() {
                 className="w-5 h-5 rounded border-zinc-700 text-yellow-500 focus:ring-yellow-500 bg-zinc-900 accent-yellow-500"
             />
             <label htmlFor="residentialAvailable" className="text-sm font-medium text-zinc-300 cursor-pointer select-none">
-                Tenho disponibilidade para dar aula nos residenciais de Alphaville
+                Tenho disponibilidade para dar aula em residenciais / condomínios
             </label>
         </div>
 
