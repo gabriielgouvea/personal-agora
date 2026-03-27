@@ -249,14 +249,26 @@ export default function CadastroAlunoPage() {
     } catch { /* silencioso */ }
   }
 
-  /* ── Validação de CPF (dígitos verificadores + on blur) ── */
-  function handleCpfBlur() {
+  /* ── Validação de CPF (dígitos verificadores + duplicata) ── */
+  async function handleCpfBlur() {
     setCpfError("");
     const cpf = w.cpf;
     if (!cpf || unmask(cpf).length !== 11) return;
     if (!isValidCPF(cpf)) {
       setCpfError("CPF inválido. Verifique os números digitados.");
+      return;
     }
+    try {
+      const res = await fetch("/api/cadastro/verificar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ campo: "cpf", valor: cpf }),
+      });
+      const data = await res.json();
+      if (data.existe) {
+        setCpfError("Este CPF já pertence a uma conta.");
+      }
+    } catch { /* silencioso */ }
   }
 
   /* ── Toggles ── */
