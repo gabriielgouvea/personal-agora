@@ -13,7 +13,7 @@ export async function sendPasswordResetEmail(
   const resetUrl = `${APP_URL}/login/redefinir-senha?token=${token}`;
 
   await resend.emails.send({
-    from: "Personal Agora <noreply@personalagora.com.br>",
+    from: "Personal Agora <onboarding@resend.dev>",
     to: email,
     subject: "Redefinição de senha - Personal Agora",
     html: `
