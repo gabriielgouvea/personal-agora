@@ -118,16 +118,25 @@ export async function POST(request: Request) {
       }
     }
 
-    // Processar cupom (incrementar usos)
+    // Processar cupom (calcular desconto e incrementar usos)
+    let cupomDesconto: number | undefined;
     if (data.codigoCupom) {
       const cupom = await prisma.cupom.findUnique({
         where: { codigo: data.codigoCupom },
       });
-      if (cupom && cupom.ativo && cupom.usosAtuais < cupom.limiteUsos) {
+      if (cupom && cupom.ativo && cupom.usosAtuais < cupom.limiteUsos &&
+          (!cupom.validade || cupom.validade > new Date())) {
         await prisma.cupom.update({
           where: { id: cupom.id },
           data: { usosAtuais: { increment: 1 } },
         });
+        const PLAN_VALUES: Record<string, number> = { start: 29.9, pro: 49.9, elite: 99.9 };
+        const baseValue = PLAN_VALUES[plano || "pro"] ?? 49.9;
+        if (cupom.tipo === "percentual") {
+          cupomDesconto = parseFloat((baseValue * (cupom.valor / 100)).toFixed(2));
+        } else {
+          cupomDesconto = cupom.valor;
+        }
       }
     }
 
@@ -216,7 +225,7 @@ export async function POST(request: Request) {
           data.cpf
         );
         const billingType = (body as { billingType?: "PIX" | "CREDIT_CARD" }).billingType ?? "UNDEFINED";
-        const subscriptionId = await createAsaasSubscription(customerId, plano || "pro", billingType);
+        const subscriptionId = await createAsaasSubscription(customerId, plano || "pro", billingType, cupomDesconto);
         paymentUrl = await getSubscriptionPaymentUrl(subscriptionId);
         await prisma.user.update({
           where: { id: user.id },

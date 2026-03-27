@@ -48,9 +48,13 @@ export async function createOrFindAsaasCustomer(
 export async function createAsaasSubscription(
   customerId: string,
   plano: string,
-  billingType: "PIX" | "CREDIT_CARD" | "UNDEFINED" = "UNDEFINED"
+  billingType: "PIX" | "CREDIT_CARD" | "UNDEFINED" = "UNDEFINED",
+  discountValue?: number
 ): Promise<string> {
-  const value = PLAN_VALUES[plano] ?? 49.9;
+  const baseValue = PLAN_VALUES[plano] ?? 49.9;
+  const value = discountValue !== undefined
+    ? Math.max(parseFloat((baseValue - discountValue).toFixed(2)), 0)
+    : baseValue;
   const nextDueDate = new Date().toISOString().split("T")[0];
   const nomePlano = plano.charAt(0).toUpperCase() + plano.slice(1);
 
