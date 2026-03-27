@@ -43,7 +43,7 @@ export default function DashboardPersonalLayout({
     fetch("/api/me")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (!data || data.tipo !== "personal") {
+        if (!data || (data.tipo !== "personal" && data.tipo !== "ambos")) {
           router.replace("/login");
           return;
         }
