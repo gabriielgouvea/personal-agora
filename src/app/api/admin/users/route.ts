@@ -47,6 +47,8 @@ export async function GET(req: NextRequest) {
         sexo: true,
         status: true,
         avatarUrl: true,
+        plano: true,
+        planoAtivo: true,
         createdAt: true,
       },
     }),

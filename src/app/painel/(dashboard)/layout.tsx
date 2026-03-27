@@ -15,6 +15,7 @@ import {
   X,
   Gift,
   Ticket,
+  Link2,
 } from "lucide-react";
 
 interface AdminSession {
@@ -31,6 +32,7 @@ const navItems = [
   { href: "/painel/convites", label: "Convites", icon: Gift },
   { href: "/painel/cupons", label: "Cupons", icon: Ticket },
   { href: "/painel/faturamento", label: "Faturamento", icon: DollarSign },
+  { href: "/painel/gerar-link", label: "Gerar Link Pgto", icon: Link2 },
   { href: "/painel/admins", label: "Administradores", icon: ShieldCheck },
 ];
 
