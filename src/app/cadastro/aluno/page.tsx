@@ -104,6 +104,7 @@ export default function CadastroAlunoPage() {
   const [loadingCep, setLoadingCep] = useState(false);
   const [phoneError, setPhoneError] = useState("");
   const [phoneDupError, setPhoneDupError] = useState("");
+  const [emailDupError, setEmailDupError] = useState("");
   const [cpfError, setCpfError] = useState("");
   const [apiError, setApiError] = useState("");
   const [duplicateInfo, setDuplicateInfo] = useState<{
@@ -162,6 +163,8 @@ export default function CadastroAlunoPage() {
       setPhoneError("Marque pelo menos uma opção (WhatsApp ou Telefone)");
       return;
     }
+    if (step === 0 && (phoneDupError || emailDupError)) return;
+    if (step === 1 && cpfError) return;
     if (valid) setStep((s) => s + 1);
   }
 
@@ -224,6 +227,24 @@ export default function CadastroAlunoPage() {
       const data = await res.json();
       if (data.existe) {
         setPhoneDupError("Este telefone já pertence a uma conta.");
+      }
+    } catch { /* silencioso */ }
+  }
+
+  /* ── Validação de e-mail duplicado (on blur) ── */
+  async function handleEmailBlur() {
+    setEmailDupError("");
+    const email = w.email;
+    if (!email || !email.includes("@")) return;
+    try {
+      const res = await fetch("/api/cadastro/verificar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ campo: "email", valor: email }),
+      });
+      const data = await res.json();
+      if (data.existe) {
+        setEmailDupError("Este e-mail já pertence a uma conta.");
       }
     } catch { /* silencioso */ }
   }
@@ -395,18 +416,21 @@ export default function CadastroAlunoPage() {
 
               <div>
                 <label className={labelCls}>E-mail</label>
-                <input {...register("email")} type="email" className={inputCls} placeholder="seu@email.com" />
+                <input
+                  {...register("email")}
+                  type="email"
+                  className={inputCls}
+                  placeholder="seu@email.com"
+                  onBlur={handleEmailBlur}
+                />
                 {errors.email && <p className={errorCls}>{errors.email.message}</p>}
+                {emailDupError && (
+                  <p className="text-yellow-400 text-xs mt-1 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    {emailDupError}
+                  </p>
+                )}
               </div>
-
-              <PasswordField
-                value={w.senha || ""}
-                confirmValue={w.confirmarSenha || ""}
-                onChange={(v) => setValue("senha", v, { shouldValidate: !!errors.senha })}
-                onConfirmChange={(v) => setValue("confirmarSenha", v, { shouldValidate: !!errors.confirmarSenha })}
-                error={errors.senha?.message}
-                confirmError={errors.confirmarSenha?.message}
-              />
 
               <div>
                 <label className={labelCls}>Telefone</label>
@@ -445,6 +469,15 @@ export default function CadastroAlunoPage() {
                 </div>
                 {phoneError && <p className={errorCls}>{phoneError}</p>}
               </div>
+
+              <PasswordField
+                value={w.senha || ""}
+                confirmValue={w.confirmarSenha || ""}
+                onChange={(v) => setValue("senha", v, { shouldValidate: !!errors.senha })}
+                onConfirmChange={(v) => setValue("confirmarSenha", v, { shouldValidate: !!errors.confirmarSenha })}
+                error={errors.senha?.message}
+                confirmError={errors.confirmarSenha?.message}
+              />
             </div>
           )}
 
