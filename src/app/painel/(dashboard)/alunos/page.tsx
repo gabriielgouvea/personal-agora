@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Search, ChevronLeft, ChevronRight, Eye, X, UserRound, Dumbbell } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Eye, X, UserRound, Dumbbell, KeyRound, Copy, Mail, MessageCircle, Check, Loader2 } from "lucide-react";
 
 interface User {
   id: string;
@@ -65,6 +65,12 @@ export default function AlunosPage() {
   const [editData, setEditData] = useState<Partial<UserDetail>>({});
   const [saving, setSaving] = useState(false);
 
+  // Reset link
+  const [resetLink, setResetLink] = useState<string | null>(null);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetCopied, setResetCopied] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
+
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams({ tipo: "aluno", page: String(page) });
@@ -121,7 +127,35 @@ export default function AlunosPage() {
     if (detail?.id === id) setDetail({ ...detail, status });
     fetchUsers();
   }
+  async function gerarResetLink(id: string) {
+    setResetLoading(true);
+    setResetLink(null);
+    setResetCopied(false);
+    setResetEmailSent(false);
+    const res = await fetch(`/api/admin/users/${id}/reset-link`, { method: "POST" });
+    const data = await res.json();
+    if (data.link) setResetLink(data.link);
+    setResetLoading(false);
+  }
 
+  function copiarLink() {
+    if (!resetLink) return;
+    navigator.clipboard.writeText(resetLink);
+    setResetCopied(true);
+    setTimeout(() => setResetCopied(false), 2500);
+  }
+
+  async function enviarEmail() {
+    if (!detail) return;
+    setResetEmailSent(false);
+    await fetch("/api/forgot-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: detail.email }),
+    });
+    setResetEmailSent(true);
+    setTimeout(() => setResetEmailSent(false), 3000);
+  }
   return (
     <div className="space-y-6">
       <div>
@@ -250,7 +284,7 @@ export default function AlunosPage() {
               <>
                 <div className="flex items-center justify-between p-5 border-b border-zinc-800">
                   <h3 className="font-bold text-lg">Detalhes do Aluno</h3>
-                  <button onClick={() => setDetail(null)} className="text-zinc-500 hover:text-white">
+                  <button onClick={() => { setDetail(null); setResetLink(null); }} className="text-zinc-500 hover:text-white">
                     <X size={20} />
                   </button>
                 </div>
@@ -403,6 +437,71 @@ export default function AlunosPage() {
                           Contato via WhatsApp
                         </a>
                       )}
+
+                      {/* ── Redefinição de senha ── */}
+                      <div className="border-t border-zinc-800 pt-3">
+                        {!resetLink ? (
+                          <button
+                            onClick={() => gerarResetLink(detail.id)}
+                            disabled={resetLoading}
+                            className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition disabled:opacity-60"
+                          >
+                            {resetLoading ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <KeyRound className="w-4 h-4" />
+                            )}
+                            Gerar link de redefinição de senha
+                          </button>
+                        ) : (
+                          <div className="space-y-2">
+                            <p className="text-xs text-zinc-500 font-medium">Link de redefinição (válido por 24h)</p>
+                            <div className="flex items-center gap-1.5 bg-zinc-800 rounded-lg px-3 py-2">
+                              <p className="text-xs text-zinc-400 flex-1 truncate font-mono">{resetLink}</p>
+                            </div>
+                            <div className="grid grid-cols-3 gap-1.5">
+                              <button
+                                onClick={copiarLink}
+                                className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition ${
+                                  resetCopied
+                                    ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                                    : "bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+                                }`}
+                              >
+                                {resetCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                                {resetCopied ? "Copiado!" : "Copiar"}
+                              </button>
+                              <button
+                                onClick={enviarEmail}
+                                className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition ${
+                                  resetEmailSent
+                                    ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                                    : "bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+                                }`}
+                              >
+                                {resetEmailSent ? <Check className="w-3.5 h-3.5" /> : <Mail className="w-3.5 h-3.5" />}
+                                {resetEmailSent ? "Enviado!" : "E-mail"}
+                              </button>
+                              {detail.telefone && (
+                                <a
+                                  href={`https://wa.me/55${detail.telefone.replace(/\D/g, "")}?text=${encodeURIComponent(`Olá ${detail.nome}! Segue seu link para redefinir a senha da plataforma Personal Agora:\n${resetLink}`)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition"
+                                >
+                                  <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                                </a>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => { setResetLink(null); setResetCopied(false); setResetEmailSent(false); }}
+                              className="text-xs text-zinc-600 hover:text-zinc-400 transition"
+                            >
+                              Fechar
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </>
                   )}
                 </div>
