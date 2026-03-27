@@ -6,7 +6,10 @@ const SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "personal-agora-secret-key-change-in-prod"
 );
 
-const COOKIE_NAME = "pa_session";
+export const SESSION_COOKIE_NAME = "pa_session";
+export const SESSION_SECRET = SECRET;
+
+const COOKIE_NAME = SESSION_COOKIE_NAME;
 
 /* ── Password ── */
 

@@ -108,16 +108,8 @@ export default function AlunosPage() {
     fetchUsers();
   }
 
-  async function verComo(userId: string, tipoVisao: "aluno" | "personal") {
-    const res = await fetch("/api/admin/impersonate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, tipoVisao }),
-    });
-    const data = await res.json();
-    if (data.token) {
-      window.open(`/entrar-como?token=${data.token}&tipo=${tipoVisao}`, "_blank");
-    }
+  function verComo(userId: string, tipoVisao: "aluno" | "personal") {
+    window.open(`/api/admin/impersonate/direct?userId=${userId}&tipo=${tipoVisao}`, "_blank");
   }
 
   async function changeStatus(id: string, status: string) {
