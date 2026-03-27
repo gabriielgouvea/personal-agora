@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes, createHash } from "crypto";
 import prisma from "@/lib/prisma";
-import { verifyAdminSession } from "@/lib/admin-auth";
+import { getAdminSession } from "@/lib/admin-auth";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const admin = await verifyAdminSession();
+  const admin = await getAdminSession();
   if (!admin) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
