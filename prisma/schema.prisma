@@ -94,6 +94,7 @@ model Aula {
   // "aguardando_pagamento" | "paga" | "confirmada" | "cancelada" | "reembolsada"
   status          String   @default("aguardando_pagamento")
   asaasChargeId   String?
+  asaasSubscriptionId String?  // assinatura recorrente Asaas
   paymentUrl      String?
   scheduledAt     DateTime?
   confirmedAt     DateTime?  // aluno confirmou a realização da aula

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { createOrFindAsaasCustomer, createAsaasCharge } from "@/lib/asaas";
+import { createOrFindAsaasCustomer, createAulaSubscription } from "@/lib/asaas";
 
 // POST /api/aulas — cria reserva + cobrança Asaas
 export async function POST(req: NextRequest) {
@@ -78,37 +78,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ aulaId: aula.id });
   }
 
-  // Criar cobrança no Asaas (PIX / BOLETO / UNDEFINED)
-  const dueDate = new Date();
-  dueDate.setDate(dueDate.getDate() + 1);
-  const dueDateStr = dueDate.toISOString().split("T")[0];
-
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://personal-agora.vercel.app";
-  const callbackSuccessUrl = `${appUrl}/dashboard/aluno/aulas/sucesso?aulaId=${aula.id}`;
-
-  const charge = await createAsaasCharge(
+  // Cria assinatura recorrente PIX (cobranças mensais com notificação por e-mail)
+  const sub = await createAulaSubscription(
     alunoCustomerId,
     valor,
-    dueDateStr,
-    `Aula com ${personal.nome} - Personal Agora`,
+    `Aula mensal com ${personal.nome} - Personal Agora`,
     aula.id,
-    billingType,
-    callbackSuccessUrl,
+    "PIX",
   );
 
-  // Salvar chargeId e paymentUrl na aula
+  // Salvar subscription e primeiro pagamento na aula
   await prisma.aula.update({
     where: { id: aula.id },
     data: {
-      asaasChargeId: charge.id,
-      paymentUrl: charge.invoiceUrl,
+      asaasSubscriptionId: sub.subscriptionId,
+      asaasChargeId: sub.firstPaymentId,
     },
   });
 
   return NextResponse.json({
     aulaId: aula.id,
-    paymentUrl: charge.invoiceUrl,
-    chargeId: charge.id,
+    subscriptionId: sub.subscriptionId,
+    chargeId: sub.firstPaymentId,
   });
   } catch (error) {
     console.error("Erro ao criar aula/cobrança:", error);

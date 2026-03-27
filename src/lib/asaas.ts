@@ -192,7 +192,6 @@ export async function createAsaasCardCharge(
   externalReference: string,
   creditCard: CreditCardData,
   creditCardHolderInfo: CreditCardHolderInfo,
-  installmentCount?: number,
 ): Promise<CardChargeResult> {
   const body: Record<string, unknown> = {
     customer: customerId,
@@ -204,16 +203,74 @@ export async function createAsaasCardCharge(
     creditCard,
     creditCardHolderInfo,
   };
-  if (installmentCount && installmentCount > 1) {
-    body.installmentCount = installmentCount;
-    body.installmentValue = parseFloat((value / installmentCount).toFixed(2));
-  }
   const charge = await asaasReq<{ id: string; status: string; invoiceUrl?: string | null }>(
     "/payments",
     "POST",
     body
   );
   return { id: charge.id, status: charge.status, invoiceUrl: charge.invoiceUrl ?? null };
+}
+
+// ── Assinatura recorrente de aula ──
+
+export interface AulaSubscriptionResult {
+  subscriptionId: string;
+  firstPaymentId: string | null;
+  status: string;
+}
+
+/**
+ * Cria assinatura mensal recorrente para aula.
+ * - CREDIT_CARD: auto-cobrado todo mês, cancelado pelo aluno.
+ * - PIX: gera cobrança mensal + notificações por e-mail.
+ */
+export async function createAulaSubscription(
+  customerId: string,
+  value: number,
+  description: string,
+  externalReference: string,
+  billingType: "PIX" | "CREDIT_CARD",
+  creditCard?: CreditCardData,
+  creditCardHolderInfo?: CreditCardHolderInfo,
+): Promise<AulaSubscriptionResult> {
+  const nextDueDate = new Date().toISOString().split("T")[0];
+
+  const body: Record<string, unknown> = {
+    customer: customerId,
+    billingType,
+    value,
+    nextDueDate,
+    cycle: "MONTHLY",
+    description,
+    externalReference,
+  };
+
+  if (billingType === "CREDIT_CARD" && creditCard && creditCardHolderInfo) {
+    body.creditCard = creditCard;
+    body.creditCardHolderInfo = creditCardHolderInfo;
+  }
+
+  const sub = await asaasReq<{ id: string; status: string }>(
+    "/subscriptions",
+    "POST",
+    body
+  );
+
+  // Busca o primeiro pagamento gerado pela assinatura
+  let firstPaymentId: string | null = null;
+  try {
+    const payments = await asaasReq<{ data: { id: string }[] }>(
+      `/subscriptions/${sub.id}/payments?limit=1`,
+      "GET"
+    );
+    firstPaymentId = payments.data[0]?.id ?? null;
+  } catch { /* ignora */ }
+
+  return {
+    subscriptionId: sub.id,
+    firstPaymentId,
+    status: sub.status,
+  };
 }
 
 export async function getPaymentCheckoutUrl(

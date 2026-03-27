@@ -100,11 +100,17 @@ export default function ContratarPage() {
     expiryYear: "",
     ccv: "",
     cpf: "",
-    cep: "",
-    addressNumber: "",
-    phone: "",
   });
-  const [installments, setInstallments] = useState(1);
+  const [souTitular, setSouTitular] = useState(false);
+  const [alunoProfile, setAlunoProfile] = useState<{
+    cpf: string | null;
+    cep: string | null;
+    numero: string | null;
+    telefone: string | null;
+    nome: string;
+    sobrenome: string;
+    email: string;
+  } | null>(null);
   const [cardResult, setCardResult] = useState<{
     success: boolean;
     status: string;
@@ -117,7 +123,23 @@ export default function ContratarPage() {
       .then(setPersonal)
       .catch(() => setError("Personal não encontrado."))
       .finally(() => setLoading(false));
+    // Busca perfil do aluno para auto-preencher dados do titular
+    fetch("/api/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data) setAlunoProfile(data);
+      })
+      .catch(() => {});
   }, [personalId]);
+
+  // Quando marca "sou titular", preenche CPF do perfil
+  useEffect(() => {
+    if (souTitular && alunoProfile?.cpf) {
+      setCardForm((prev) => ({ ...prev, cpf: alunoProfile.cpf!.replace(/\D/g, "") }));
+    } else if (!souTitular) {
+      setCardForm((prev) => ({ ...prev, cpf: "" }));
+    }
+  }, [souTitular, alunoProfile]);
 
   // Polling de status quando PIX está exibido
   useEffect(() => {
@@ -189,10 +211,6 @@ export default function ContratarPage() {
           setError("CVV inválido.");
           return;
         }
-        if (cardForm.cpf.replace(/\D/g, "").length !== 11) {
-          setError("CPF do titular inválido.");
-          return;
-        }
 
         const cardRes = await fetch(`/api/aulas/${data.aulaId}/pagar-cartao`, {
           method: "POST",
@@ -205,7 +223,6 @@ export default function ContratarPage() {
               expiryYear: cardForm.expiryYear,
               ccv: cardForm.ccv,
             },
-            installmentCount: installments > 1 ? installments : undefined,
           }),
         });
         const cardData = await cardRes.json();
@@ -215,7 +232,7 @@ export default function ContratarPage() {
         }
 
         setCardResult({
-          success: cardData.paid || cardData.status === "CONFIRMED" || cardData.status === "RECEIVED",
+          success: cardData.paid || cardData.status === "ACTIVE" || cardData.status === "CONFIRMED" || cardData.status === "RECEIVED",
           status: cardData.status,
           aulaId: data.aulaId,
         });
@@ -430,14 +447,15 @@ export default function ContratarPage() {
             {cardResult.success ? (
               <>
                 <CheckCircle2 className="w-16 h-16 text-green-400 mx-auto mb-4" />
-                <h3 className="font-bold text-2xl text-green-400 mb-2">Pagamento aprovado!</h3>
-                <p className="text-zinc-400">Redirecionando...</p>
+                <h3 className="font-bold text-2xl text-green-400 mb-2">Assinatura ativada!</h3>
+                <p className="text-zinc-400 text-sm">Seu cartão será cobrado automaticamente todo mês.</p>
+                <p className="text-zinc-500 text-xs mt-1">Redirecionando...</p>
               </>
             ) : (
               <>
                 <Clock className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
                 <h3 className="font-bold text-2xl text-yellow-400 mb-2">Pagamento em processamento</h3>
-                <p className="text-zinc-400 text-sm">Seu pagamento está sendo analisado. Você será notificado quando for confirmado.</p>
+                <p className="text-zinc-400 text-sm">Seu pagamento está sendo analisado. A cobrança mensal será ativada após confirmação.</p>
                 <button
                   onClick={() => router.push("/dashboard/aluno/aulas")}
                   className="mt-4 px-6 py-2 bg-zinc-800 rounded-xl text-sm hover:bg-zinc-700 transition"
@@ -459,14 +477,14 @@ export default function ContratarPage() {
             <div className="space-y-3">
               <div className="flex justify-between items-center py-2 border-b border-zinc-800">
                 <span className="text-zinc-400 text-sm">Serviço</span>
-                <span className="text-sm font-medium">1 aula com {personal.nome}</span>
+                <span className="text-sm font-medium">Aula com {personal.nome}</span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-zinc-800">
                 <span className="text-zinc-400 text-sm">Tipo</span>
-                <span className="text-sm font-medium">Aula avulsa (não é pacote)</span>
+                <span className="text-sm font-medium">Cobrança mensal recorrente</span>
               </div>
               <div className="flex justify-between items-center py-2">
-                <span className="text-zinc-400 text-sm font-semibold">Total</span>
+                <span className="text-zinc-400 text-sm font-semibold">Valor mensal</span>
                 <span className="text-2xl font-black text-yellow-400">
                   R$ {personal.valorAproximado ?? "—"}
                 </span>
@@ -478,8 +496,8 @@ export default function ContratarPage() {
               <p className="text-sm font-semibold text-zinc-300 mb-3">Como prefere pagar?</p>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { id: "PIX" as const, label: "PIX", icon: Smartphone, desc: "Aprovação instantânea" },
-                  { id: "CREDIT_CARD" as const, label: "Cartão de crédito", icon: CreditCard, desc: "Parcelamento disponível" },
+                  { id: "PIX" as const, label: "PIX", icon: Smartphone, desc: "Cobrança mensal por e-mail" },
+                  { id: "CREDIT_CARD" as const, label: "Cartão de crédito", icon: CreditCard, desc: "Débito automático mensal" },
                 ].map(({ id, label, icon: Icon, desc }) => (
                   <button
                     key={id}
@@ -573,12 +591,21 @@ export default function ContratarPage() {
                   </div>
                 </div>
 
-                <p className="text-sm font-semibold text-zinc-300 mt-2">Dados do titular</p>
+                {/* Checkbox sou titular */}
+                <label className="flex items-center gap-3 cursor-pointer mt-2">
+                  <input
+                    type="checkbox"
+                    checked={souTitular}
+                    onChange={(e) => setSouTitular(e.target.checked)}
+                    className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 text-yellow-500 focus:ring-yellow-500 focus:ring-offset-0"
+                  />
+                  <span className="text-sm text-zinc-300">Sou o titular do cartão</span>
+                </label>
 
-                {/* CPF + Telefone */}
-                <div className="grid grid-cols-2 gap-3">
+                {/* CPF do titular — aparece se NÃO marcou "sou titular" */}
+                {!souTitular && (
                   <div>
-                    <label className="text-xs text-zinc-500 mb-1 block">CPF do titular</label>
+                    <label className="text-xs text-zinc-500 mb-1 block">CPF do titular do cartão</label>
                     <input
                       type="text"
                       inputMode="numeric"
@@ -588,66 +615,19 @@ export default function ContratarPage() {
                       className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:border-yellow-500 focus:outline-none transition"
                     />
                   </div>
-                  <div>
-                    <label className="text-xs text-zinc-500 mb-1 block">Telefone</label>
-                    <input
-                      type="text"
-                      inputMode="tel"
-                      placeholder="11999999999"
-                      value={cardForm.phone}
-                      onChange={(e) => handleCardInput("phone", e.target.value.replace(/\D/g, "").slice(0, 11))}
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:border-yellow-500 focus:outline-none transition"
-                    />
-                  </div>
-                </div>
+                )}
 
-                {/* CEP + Número */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-zinc-500 mb-1 block">CEP</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="00000-000"
-                      value={cardForm.cep}
-                      onChange={(e) => handleCardInput("cep", e.target.value.replace(/\D/g, "").slice(0, 8))}
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:border-yellow-500 focus:outline-none transition"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-zinc-500 mb-1 block">Número do endereço</label>
-                    <input
-                      type="text"
-                      placeholder="123"
-                      value={cardForm.addressNumber}
-                      onChange={(e) => handleCardInput("addressNumber", e.target.value)}
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:border-yellow-500 focus:outline-none transition"
-                    />
-                  </div>
-                </div>
+                {souTitular && alunoProfile?.cpf && (
+                  <p className="text-xs text-zinc-500 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-green-400" />
+                    CPF do cadastro será usado automaticamente
+                  </p>
+                )}
 
-                {/* Parcelas */}
-                {personal && (() => {
-                  const v = parseFloat(personal.valorAproximado?.replace(/[^0-9,\.]/g, "").replace(",", ".") ?? "0");
-                  const maxInstallments = Math.min(12, Math.floor(v / 10) || 1);
-                  if (maxInstallments <= 1) return null;
-                  return (
-                    <div>
-                      <label className="text-xs text-zinc-500 mb-1 block">Parcelas</label>
-                      <select
-                        value={installments}
-                        onChange={(e) => setInstallments(Number(e.target.value))}
-                        className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-3 text-sm text-white focus:border-yellow-500 focus:outline-none transition"
-                      >
-                        {Array.from({ length: maxInstallments }, (_, i) => i + 1).map((n) => (
-                          <option key={n} value={n}>
-                            {n === 1 ? "À vista" : `${n}x de R$ ${(v / n).toFixed(2).replace(".", ",")}`}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  );
-                })()}
+                <p className="text-xs text-zinc-600 mt-1">
+                  Ao confirmar, você autoriza a cobrança mensal automática neste cartão.
+                  Cancele a qualquer momento na área de aulas.
+                </p>
               </div>
             )}
 
@@ -669,9 +649,9 @@ export default function ContratarPage() {
                   Processando...
                 </>
               ) : billingType === "PIX" ? (
-                "Gerar PIX"
+                "Assinar com PIX"
               ) : (
-                "Pagar com cartão"
+                "Assinar com cartão"
               )}
             </button>
           </div>

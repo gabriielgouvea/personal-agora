@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { createOrFindAsaasCustomer, createAsaasCardCharge } from "@/lib/asaas";
+import { createOrFindAsaasCustomer, createAulaSubscription } from "@/lib/asaas";
 
-// POST /api/aulas/[id]/pagar-cartao — paga aula com cartão de crédito (transparente)
+// POST /api/aulas/[id]/pagar-cartao — cria assinatura recorrente com cartão de crédito
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -37,7 +37,7 @@ export async function POST(
     }
 
     const body = await req.json();
-    const { creditCard, installmentCount } = body as {
+    const { creditCard } = body as {
       creditCard: {
         holderName: string;
         number: string;
@@ -45,7 +45,6 @@ export async function POST(
         expiryYear: string;
         ccv: string;
       };
-      installmentCount?: number;
     };
 
     if (!creditCard?.number || !creditCard?.holderName || !creditCard?.expiryMonth ||
@@ -70,16 +69,13 @@ export async function POST(
       });
     }
 
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 1);
-    const dueDateStr = dueDate.toISOString().split("T")[0];
-
-    const charge = await createAsaasCardCharge(
+    // Cria assinatura recorrente mensal com cartão
+    const sub = await createAulaSubscription(
       customerId,
       aula.valor,
-      dueDateStr,
-      `Aula com ${aula.personal.nome} - Personal Agora`,
+      `Aula mensal com ${aula.personal.nome} - Personal Agora`,
       aula.id,
+      "CREDIT_CARD",
       creditCard,
       {
         name: `${aluno.nome} ${aluno.sobrenome}`.trim(),
@@ -89,24 +85,23 @@ export async function POST(
         addressNumber: aluno.numero ?? "0",
         phone: (aluno.telefone ?? "").replace(/\D/g, ""),
       },
-      installmentCount,
     );
 
-    // Atualizar aula com dados da cobrança
-    const isPaid = charge.status === "CONFIRMED" || charge.status === "RECEIVED";
+    // Atualizar aula com dados da assinatura
+    const isPaid = sub.status === "ACTIVE";
     await prisma.aula.update({
       where: { id: aula.id },
       data: {
-        asaasChargeId: charge.id,
-        paymentUrl: charge.invoiceUrl,
+        asaasSubscriptionId: sub.subscriptionId,
+        asaasChargeId: sub.firstPaymentId,
         status: isPaid ? "paga" : "aguardando_pagamento",
       },
     });
 
     return NextResponse.json({
       success: true,
-      chargeId: charge.id,
-      status: charge.status,
+      subscriptionId: sub.subscriptionId,
+      status: sub.status,
       paid: isPaid,
     });
   } catch (error) {
