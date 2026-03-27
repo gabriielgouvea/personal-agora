@@ -124,16 +124,21 @@ export async function createAsaasCharge(
   dueDate: string, // YYYY-MM-DD
   description: string,
   externalReference: string,
-  billingType: "PIX" | "CREDIT_CARD" | "BOLETO" | "UNDEFINED" = "UNDEFINED"
+  billingType: "PIX" | "CREDIT_CARD" | "BOLETO" | "UNDEFINED" = "PIX",
+  callbackSuccessUrl?: string
 ): Promise<{ id: string; invoiceUrl: string | null }> {
-  const charge = await asaasReq<{ id: string; invoiceUrl?: string | null }>("/payments", "POST", {
+  const body: Record<string, unknown> = {
     customer: customerId,
     billingType,
     value,
     dueDate,
     description,
     externalReference,
-  });
+  };
+  if (callbackSuccessUrl) {
+    body.callback = { successUrl: callbackSuccessUrl, autoRedirect: true };
+  }
+  const charge = await asaasReq<{ id: string; invoiceUrl?: string | null }>("/payments", "POST", body);
   return { id: charge.id, invoiceUrl: charge.invoiceUrl ?? null };
 }
 

@@ -69,6 +69,9 @@ export async function POST(req: NextRequest) {
   dueDate.setDate(dueDate.getDate() + 1);
   const dueDateStr = dueDate.toISOString().split("T")[0];
 
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://personal-agora.vercel.app";
+  const callbackSuccessUrl = `${appUrl}/dashboard/aluno/aulas/sucesso?aulaId=${aula.id}`;
+
   const charge = await createAsaasCharge(
     alunoCustomerId,
     valor,
@@ -76,6 +79,7 @@ export async function POST(req: NextRequest) {
     `Aula com ${personal.nome} - Personal Agora`,
     aula.id,
     billingType,
+    callbackSuccessUrl,
   );
 
   // Salvar chargeId e paymentUrl na aula

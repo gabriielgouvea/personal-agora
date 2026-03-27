@@ -7,10 +7,7 @@ import {
   Building2,
   Dumbbell,
   Home,
-  SlidersHorizontal,
   X,
-  ChevronDown,
-  ChevronUp,
   ShoppingBag,
 } from "lucide-react";
 
@@ -65,7 +62,6 @@ function whatsappLink(phone: string, nome: string) {
 export default function BuscarPersonalPage() {
   const [personais, setPersonais] = useState<Personal[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
 
   // Filtros
   const [nome, setNome] = useState("");
@@ -214,39 +210,19 @@ export default function BuscarPersonalPage() {
         </p>
       </div>
 
-      {/* Barra de busca + botão filtros */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-          <input
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            placeholder="Buscar por nome do personal..."
-            className="w-full pl-10 pr-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-white placeholder-zinc-500 outline-none focus:border-yellow-500 transition"
-          />
-        </div>
-        <button
-          onClick={() => setShowFilters((p) => !p)}
-          className={`flex items-center gap-2 px-4 py-3 rounded-xl border text-sm font-medium transition ${
-            hasFilters || showFilters
-              ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-500"
-              : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
-          }`}
-        >
-          <SlidersHorizontal className="w-4 h-4" />
-          <span className="hidden sm:inline">Filtros</span>
-          {hasFilters && (
-            <span className="w-5 h-5 rounded-full bg-yellow-500 text-black text-xs font-bold flex items-center justify-center">
-              {modalidadesSel.length + regioesSel.length + academiasSel.length + (casa ? 1 : 0)}
-            </span>
-          )}
-          {showFilters ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-        </button>
+      {/* Barra de busca */}
+      <div className="relative">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+        <input
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          placeholder="Buscar por nome do personal..."
+          className="w-full pl-10 pr-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-white placeholder-zinc-500 outline-none focus:border-yellow-500 transition"
+        />
       </div>
 
-      {/* Painel de filtros expansível */}
-      {showFilters && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-5 animate-in fade-in slide-in-from-top-2 duration-200">
+      {/* Painel de filtros */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-5">
           {/* Modalidades */}
           <div>
             <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
@@ -383,37 +359,6 @@ export default function BuscarPersonalPage() {
             </button>
           )}
         </div>
-      )}
-
-      {/* Tags de filtros ativos (resumo quando painel fechado) */}
-      {!showFilters && hasFilters && (
-        <div className="flex flex-wrap gap-2">
-          {modalidadesSel.map((m) => (
-            <span key={m} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-yellow-500/10 text-yellow-400 text-xs border border-yellow-500/20">
-              <Dumbbell className="w-2.5 h-2.5" /> {m}
-              <button onClick={() => toggleModalidade(m)}><X className="w-2.5 h-2.5" /></button>
-            </span>
-          ))}
-          {regioesSel.map((r) => (
-            <span key={r} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 text-xs border border-blue-500/20">
-              <MapPin className="w-2.5 h-2.5" /> {r}
-              <button onClick={() => setRegioesSel((p) => p.filter((x) => x !== r))}><X className="w-2.5 h-2.5" /></button>
-            </span>
-          ))}
-          {academiasSel.map((a) => (
-            <span key={a} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-400 text-xs border border-purple-500/20">
-              <Building2 className="w-2.5 h-2.5" /> {a}
-              <button onClick={() => setAcademiasSel((p) => p.filter((x) => x !== a))}><X className="w-2.5 h-2.5" /></button>
-            </span>
-          ))}
-          {casa && (
-            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-green-500/10 text-green-400 text-xs border border-green-500/20">
-              <Home className="w-2.5 h-2.5" /> Em casa
-              <button onClick={() => setCasa(false)}><X className="w-2.5 h-2.5" /></button>
-            </span>
-          )}
-        </div>
-      )}
 
       {/* Resultados */}
       <div>

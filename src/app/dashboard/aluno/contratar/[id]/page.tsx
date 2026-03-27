@@ -5,16 +5,15 @@ import { useParams, useRouter } from "next/navigation";
 import {
   ShieldCheck,
   RefreshCw,
-  Lock,
   BadgeCheck,
   ArrowLeft,
   Loader2,
-  Star,
   Home,
   MapPin,
   CreditCard,
   Smartphone,
   AlertCircle,
+  Lock,
 } from "lucide-react";
 
 interface Personal {
@@ -78,7 +77,7 @@ export default function ContratarPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [contratando, setContratando] = useState(false);
-  const [billingType, setBillingType] = useState<"PIX" | "CREDIT_CARD" | "UNDEFINED">("UNDEFINED");
+  const [billingType, setBillingType] = useState<"PIX" | "CREDIT_CARD">("PIX");
 
   useEffect(() => {
     fetch(`/api/personais/${personalId}`)
@@ -194,7 +193,7 @@ export default function ContratarPage() {
             </div>
             <div className="text-right shrink-0">
               <div className="flex items-center gap-1 text-yellow-400">
-                <Star className="w-4 h-4 fill-yellow-400" />
+                <BadgeCheck className="w-4 h-4" />
                 <span className="text-xs font-semibold text-zinc-400">Verificado</span>
               </div>
             </div>
@@ -228,23 +227,23 @@ export default function ContratarPage() {
             {/* Forma de pagamento */}
             <div className="mt-5">
               <p className="text-sm font-semibold text-zinc-300 mb-3">Como prefere pagar?</p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-3">
                 {[
-                  { id: "PIX" as const, label: "PIX", icon: Smartphone },
-                  { id: "CREDIT_CARD" as const, label: "Cartão", icon: CreditCard },
-                  { id: "UNDEFINED" as const, label: "Escolher depois", icon: Lock },
-                ].map(({ id, label, icon: Icon }) => (
+                  { id: "PIX" as const, label: "PIX", icon: Smartphone, desc: "Aprovação instantânea" },
+                  { id: "CREDIT_CARD" as const, label: "Cartão de crédito", icon: CreditCard, desc: "Parcelamento disponível" },
+                ].map(({ id, label, icon: Icon, desc }) => (
                   <button
                     key={id}
                     onClick={() => setBillingType(id)}
-                    className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border text-xs font-semibold transition ${
+                    className={`flex flex-col items-center gap-1.5 py-4 rounded-xl border text-center transition ${
                       billingType === id
                         ? "border-yellow-500 bg-yellow-500/10 text-yellow-400"
                         : "border-zinc-700 bg-zinc-800 text-zinc-400 hover:border-zinc-600"
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
-                    {label}
+                    <Icon className="w-5 h-5" />
+                    <span className="text-sm font-bold">{label}</span>
+                    <span className="text-xs opacity-60">{desc}</span>
                   </button>
                 ))}
               </div>
