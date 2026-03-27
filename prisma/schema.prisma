@@ -69,6 +69,10 @@ model User {
   asaasCustomerId     String?
   asaasSubscriptionId String?
 
+  // Cupom de desconto na assinatura
+  cupomMesesRestantes  Int     @default(0)  // meses de desconto restantes (0 = sem desconto ativo)
+  valorPlanoOriginal   Float?               // valor cheio do plano (para restaurar após cupom expirar)
+
   // Redefinição de senha
   resetToken       String?
   resetTokenExpiry DateTime?
@@ -138,13 +142,14 @@ model Convite {
 }
 
 model Cupom {
-  id          String   @id @default(uuid())
-  codigo      String   @unique
-  tipo        String   // "percentual" | "fixo"
-  valor       Float    // ex: 10 (10% ou R$10)
-  validade    DateTime?
-  limiteUsos  Int      @default(1)
-  usosAtuais  Int      @default(0)
-  ativo       Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  id             String   @id @default(uuid())
+  codigo         String   @unique
+  tipo           String   // "percentual" | "fixo"
+  valor          Float    // ex: 10 (10% ou R$10)
+  validade       DateTime?
+  limiteUsos     Int      @default(1)
+  usosAtuais     Int      @default(0)
+  mesesDesconto  Int      @default(0) // 0 = desconto único (compra avulsa), >0 = aplica em N meses de assinatura
+  ativo          Boolean  @default(true)
+  createdAt      DateTime @default(now())
 }

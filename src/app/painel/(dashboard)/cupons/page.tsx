@@ -11,6 +11,7 @@ interface Cupom {
   validade: string | null;
   limiteUsos: number;
   usosAtuais: number;
+  mesesDesconto: number;
   ativo: boolean;
   createdAt: string;
 }
@@ -27,6 +28,7 @@ export default function CuponsPage() {
   const [valor, setValor] = useState("");
   const [validade, setValidade] = useState("");
   const [limiteUsos, setLimiteUsos] = useState("100");
+  const [mesesDesconto, setMesesDesconto] = useState("0");
   const [creating, setCreating] = useState(false);
   const [formError, setFormError] = useState("");
 
@@ -50,13 +52,14 @@ export default function CuponsPage() {
     const res = await fetch("/api/admin/cupons", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ codigo, tipo, valor, validade: validade || null, limiteUsos }),
+      body: JSON.stringify({ codigo, tipo, valor, validade: validade || null, limiteUsos, mesesDesconto: parseInt(mesesDesconto) || 0 }),
     });
     if (res.ok) {
       setCodigo("");
       setValor("");
       setValidade("");
       setLimiteUsos("100");
+      setMesesDesconto("0");
       setShowForm(false);
       fetchCupons();
     } else {
@@ -174,6 +177,22 @@ export default function CuponsPage() {
                 className={inputCls}
               />
             </div>
+            <div>
+              <label className="block text-xs text-zinc-500 mb-1">
+                Meses com desconto (assinatura)
+              </label>
+              <input
+                value={mesesDesconto}
+                onChange={(e) => setMesesDesconto(e.target.value)}
+                type="number"
+                min="0"
+                placeholder="0 = compra avulsa"
+                className={inputCls}
+              />
+              <p className="text-[10px] text-zinc-600 mt-1">
+                0 = desconto em compra avulsa. Ex: 3 = desconto nos 3 primeiros meses da assinatura.
+              </p>
+            </div>
           </div>
           {formError && <p className="text-red-400 text-xs mt-3">{formError}</p>}
           <div className="flex gap-3 mt-4">
@@ -258,6 +277,12 @@ export default function CuponsPage() {
                       </div>
                       <p className="text-xs text-zinc-500 mt-1">
                         Usos: {c.usosAtuais}/{c.limiteUsos}
+                        {c.mesesDesconto > 0 && (
+                          <> • {c.mesesDesconto} {c.mesesDesconto === 1 ? "mês" : "meses"} de desconto</>
+                        )}
+                        {c.mesesDesconto === 0 && (
+                          <> • Compra avulsa</>
+                        )}
                         {c.validade && (
                           <> • Válido até {new Date(c.validade).toLocaleDateString("pt-BR")}</>
                         )}

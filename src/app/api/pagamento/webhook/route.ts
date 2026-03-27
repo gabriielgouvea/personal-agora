@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { updateAsaasSubscriptionValue } from "@/lib/asaas";
 import {
   sendAulaConfirmadaAluno,
   sendAulaConfirmadaPersonal,
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
       if (subscriptionId) {
         const user = await prisma.user.findFirst({
           where: { asaasSubscriptionId: subscriptionId },
-          select: { id: true, plano: true },
+          select: { id: true, plano: true, cupomMesesRestantes: true, valorPlanoOriginal: true },
         });
 
         if (user) {
@@ -88,13 +89,31 @@ export async function POST(req: NextRequest) {
           const fim = new Date(agora);
           fim.setMonth(fim.getMonth() + 1);
 
+          const updateData: Record<string, unknown> = {
+            planoAtivo: true,
+            planoInicio: agora,
+            planoFim: fim,
+          };
+
+          // Decrementar meses de desconto restantes do cupom
+          if (user.cupomMesesRestantes > 0) {
+            const restantes = user.cupomMesesRestantes - 1;
+            updateData.cupomMesesRestantes = restantes;
+
+            // Se acabaram os meses de desconto, restaurar valor original da assinatura
+            if (restantes === 0 && user.valorPlanoOriginal) {
+              try {
+                await updateAsaasSubscriptionValue(subscriptionId, user.valorPlanoOriginal);
+                updateData.valorPlanoOriginal = null;
+              } catch (e) {
+                console.error("Erro ao restaurar valor da assinatura:", e);
+              }
+            }
+          }
+
           await prisma.user.update({
             where: { id: user.id },
-            data: {
-              planoAtivo: true,
-              planoInicio: agora,
-              planoFim: fim,
-            },
+            data: updateData,
           });
         }
       }

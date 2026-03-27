@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
     codigo: cupom.codigo,
     tipo: cupom.tipo,
     valor: cupom.valor,
+    mesesDesconto: cupom.mesesDesconto,
     descricao:
       cupom.tipo === "percentual"
         ? `${cupom.valor}% de desconto`

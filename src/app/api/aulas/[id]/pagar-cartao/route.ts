@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { createOrFindAsaasCustomer, createAulaSubscription } from "@/lib/asaas";
+import { createOrFindAsaasCustomer, createAsaasCardCharge } from "@/lib/asaas";
 
-// POST /api/aulas/[id]/pagar-cartao — cria assinatura recorrente com cartão de crédito
+// POST /api/aulas/[id]/pagar-cartao — paga aula avulsa com cartão de crédito (transparente)
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -69,13 +69,17 @@ export async function POST(
       });
     }
 
-    // Cria assinatura recorrente mensal com cartão
-    const sub = await createAulaSubscription(
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 1);
+    const dueDateStr = dueDate.toISOString().split("T")[0];
+
+    // Cobrança avulsa com cartão
+    const charge = await createAsaasCardCharge(
       customerId,
       aula.valor,
-      `Aula mensal com ${aula.personal.nome} - Personal Agora`,
+      dueDateStr,
+      `Aula com ${aula.personal.nome} - Personal Agora`,
       aula.id,
-      "CREDIT_CARD",
       creditCard,
       {
         name: `${aluno.nome} ${aluno.sobrenome}`.trim(),
@@ -87,21 +91,21 @@ export async function POST(
       },
     );
 
-    // Atualizar aula com dados da assinatura
-    const isPaid = sub.status === "ACTIVE";
+    // Atualizar aula com dados da cobrança
+    const isPaid = charge.status === "CONFIRMED" || charge.status === "RECEIVED";
     await prisma.aula.update({
       where: { id: aula.id },
       data: {
-        asaasSubscriptionId: sub.subscriptionId,
-        asaasChargeId: sub.firstPaymentId,
+        asaasChargeId: charge.id,
+        paymentUrl: charge.invoiceUrl,
         status: isPaid ? "paga" : "aguardando_pagamento",
       },
     });
 
     return NextResponse.json({
       success: true,
-      subscriptionId: sub.subscriptionId,
-      status: sub.status,
+      chargeId: charge.id,
+      status: charge.status,
       paid: isPaid,
     });
   } catch (error) {

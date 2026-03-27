@@ -17,6 +17,7 @@ import {
   Copy,
   CheckCircle2,
   Clock,
+  Ticket,
 } from "lucide-react";
 
 interface Personal {
@@ -117,6 +118,19 @@ export default function ContratarPage() {
     aulaId: string;
   } | null>(null);
 
+  // Cupom state
+  const [showCupom, setShowCupom] = useState(false);
+  const [cupomInput, setCupomInput] = useState("");
+  const [cupomStatus, setCupomStatus] = useState<{
+    valido?: boolean;
+    descricao?: string;
+    codigo?: string;
+    tipo?: string;
+    valor?: number;
+    erro?: string;
+  }>({});
+  const [validandoCupom, setValidandoCupom] = useState(false);
+
   useEffect(() => {
     fetch(`/api/personais/${personalId}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
@@ -176,6 +190,38 @@ export default function ContratarPage() {
     return v.replace(/\D/g, "").slice(0, 16).replace(/(\d{4})(?=\d)/g, "$1 ");
   }
 
+  async function validarCupom() {
+    if (!cupomInput.trim()) return;
+    setValidandoCupom(true);
+    setCupomStatus({});
+    try {
+      const res = await fetch("/api/cupom/aplicar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codigo: cupomInput.toUpperCase() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCupomStatus({ valido: true, descricao: data.descricao, codigo: data.codigo, tipo: data.tipo, valor: data.valor });
+      } else {
+        setCupomStatus({ erro: data.error || "Cupom inválido" });
+      }
+    } catch {
+      setCupomStatus({ erro: "Erro ao validar cupom" });
+    } finally {
+      setValidandoCupom(false);
+    }
+  }
+
+  function calcularValorComDesconto(): number {
+    const v = parseFloat(personal?.valorAproximado?.replace(/[^0-9,\.]/g, "").replace(",", ".") ?? "0");
+    if (!cupomStatus.valido || !cupomStatus.valor) return v;
+    if (cupomStatus.tipo === "percentual") {
+      return parseFloat((v * (1 - cupomStatus.valor / 100)).toFixed(2));
+    }
+    return parseFloat(Math.max(v - cupomStatus.valor, 0).toFixed(2));
+  }
+
   async function handleContratar() {
     setContratando(true);
     setError("");
@@ -184,7 +230,11 @@ export default function ContratarPage() {
       const res = await fetch("/api/aulas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ personalId, billingType }),
+        body: JSON.stringify({
+          personalId,
+          billingType,
+          codigoCupom: cupomStatus.valido ? cupomStatus.codigo : undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -232,7 +282,7 @@ export default function ContratarPage() {
         }
 
         setCardResult({
-          success: cardData.paid || cardData.status === "ACTIVE" || cardData.status === "CONFIRMED" || cardData.status === "RECEIVED",
+          success: cardData.paid || cardData.status === "CONFIRMED" || cardData.status === "RECEIVED",
           status: cardData.status,
           aulaId: data.aulaId,
         });
@@ -447,15 +497,14 @@ export default function ContratarPage() {
             {cardResult.success ? (
               <>
                 <CheckCircle2 className="w-16 h-16 text-green-400 mx-auto mb-4" />
-                <h3 className="font-bold text-2xl text-green-400 mb-2">Assinatura ativada!</h3>
-                <p className="text-zinc-400 text-sm">Seu cartão será cobrado automaticamente todo mês.</p>
-                <p className="text-zinc-500 text-xs mt-1">Redirecionando...</p>
+                <h3 className="font-bold text-2xl text-green-400 mb-2">Pagamento aprovado!</h3>
+                <p className="text-zinc-400">Redirecionando...</p>
               </>
             ) : (
               <>
                 <Clock className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
                 <h3 className="font-bold text-2xl text-yellow-400 mb-2">Pagamento em processamento</h3>
-                <p className="text-zinc-400 text-sm">Seu pagamento está sendo analisado. A cobrança mensal será ativada após confirmação.</p>
+                <p className="text-zinc-400 text-sm">Seu pagamento está sendo analisado. Você será notificado quando for confirmado.</p>
                 <button
                   onClick={() => router.push("/dashboard/aluno/aulas")}
                   className="mt-4 px-6 py-2 bg-zinc-800 rounded-xl text-sm hover:bg-zinc-700 transition"
@@ -477,18 +526,83 @@ export default function ContratarPage() {
             <div className="space-y-3">
               <div className="flex justify-between items-center py-2 border-b border-zinc-800">
                 <span className="text-zinc-400 text-sm">Serviço</span>
-                <span className="text-sm font-medium">Aula com {personal.nome}</span>
+                <span className="text-sm font-medium">1 aula com {personal.nome}</span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-zinc-800">
                 <span className="text-zinc-400 text-sm">Tipo</span>
-                <span className="text-sm font-medium">Cobrança mensal recorrente</span>
+                <span className="text-sm font-medium">Aula avulsa</span>
               </div>
               <div className="flex justify-between items-center py-2">
-                <span className="text-zinc-400 text-sm font-semibold">Valor mensal</span>
-                <span className="text-2xl font-black text-yellow-400">
-                  R$ {personal.valorAproximado ?? "—"}
-                </span>
+                <span className="text-zinc-400 text-sm font-semibold">Total</span>
+                <div className="text-right">
+                  {cupomStatus.valido ? (
+                    <>
+                      <span className="text-sm text-zinc-500 line-through mr-2">
+                        R$ {personal.valorAproximado}
+                      </span>
+                      <span className="text-2xl font-black text-green-400">
+                        R$ {calcularValorComDesconto().toFixed(2)}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-2xl font-black text-yellow-400">
+                      R$ {personal.valorAproximado ?? "—"}
+                    </span>
+                  )}
+                </div>
               </div>
+            </div>
+
+            {/* Cupom de desconto */}
+            <div className="mt-4">
+              {!showCupom ? (
+                <button
+                  onClick={() => setShowCupom(true)}
+                  className="flex items-center gap-2 text-sm text-zinc-400 hover:text-yellow-400 transition"
+                >
+                  <Ticket className="w-4 h-4" />
+                  Tenho um cupom de desconto
+                </button>
+              ) : (
+                <div className="space-y-2">
+                  <label className="text-xs text-zinc-500 block">Cupom de desconto</label>
+                  {cupomStatus.valido ? (
+                    <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3">
+                      <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />
+                      <span className="text-sm text-green-400 font-medium flex-1">{cupomStatus.descricao}</span>
+                      <button
+                        onClick={() => { setCupomStatus({}); setCupomInput(""); }}
+                        className="text-xs text-zinc-500 hover:text-red-400 transition"
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="CÓDIGO DO CUPOM"
+                        value={cupomInput}
+                        onChange={(e) => setCupomInput(e.target.value.toUpperCase())}
+                        className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:border-yellow-500 focus:outline-none transition uppercase"
+                      />
+                      <button
+                        onClick={validarCupom}
+                        disabled={validandoCupom || !cupomInput.trim()}
+                        className="px-4 py-3 bg-yellow-500 text-black font-bold rounded-xl text-sm hover:bg-yellow-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {validandoCupom ? <Loader2 className="w-4 h-4 animate-spin" /> : "Aplicar"}
+                      </button>
+                    </div>
+                  )}
+                  {cupomStatus.erro && (
+                    <p className="text-xs text-red-400 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {cupomStatus.erro}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Forma de pagamento */}
@@ -496,8 +610,8 @@ export default function ContratarPage() {
               <p className="text-sm font-semibold text-zinc-300 mb-3">Como prefere pagar?</p>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { id: "PIX" as const, label: "PIX", icon: Smartphone, desc: "Cobrança mensal por e-mail" },
-                  { id: "CREDIT_CARD" as const, label: "Cartão de crédito", icon: CreditCard, desc: "Débito automático mensal" },
+                  { id: "PIX" as const, label: "PIX", icon: Smartphone, desc: "Aprovação instantânea" },
+                  { id: "CREDIT_CARD" as const, label: "Cartão de crédito", icon: CreditCard, desc: "Pagamento na hora" },
                 ].map(({ id, label, icon: Icon, desc }) => (
                   <button
                     key={id}
@@ -649,9 +763,9 @@ export default function ContratarPage() {
                   Processando...
                 </>
               ) : billingType === "PIX" ? (
-                "Assinar com PIX"
+                "Gerar PIX"
               ) : (
-                "Assinar com cartão"
+                "Pagar com cartão"
               )}
             </button>
           </div>

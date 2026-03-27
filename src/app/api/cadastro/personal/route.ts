@@ -131,6 +131,7 @@ export async function POST(request: Request) {
 
     // Processar cupom (calcular desconto e incrementar usos)
     let cupomDesconto: number | undefined;
+    let cupomMesesDesconto = 0;
     if (data.codigoCupom) {
       const cupom = await prisma.cupom.findUnique({
         where: { codigo: data.codigoCupom },
@@ -148,6 +149,7 @@ export async function POST(request: Request) {
         } else {
           cupomDesconto = cupom.valor;
         }
+        cupomMesesDesconto = cupom.mesesDesconto ?? 0;
       }
     }
 
@@ -238,9 +240,19 @@ export async function POST(request: Request) {
         const billingType = (body as { billingType?: "PIX" | "CREDIT_CARD" }).billingType ?? "UNDEFINED";
         const subscriptionId = await createAsaasSubscription(customerId, plano || "pro", billingType, cupomDesconto);
         paymentUrl = await getSubscriptionPaymentUrl(subscriptionId);
+        const PLAN_VALUES_ASAAS: Record<string, number> = { start: 29.9, pro: 49.9, elite: 99.9 };
+        const updateData: Record<string, unknown> = {
+          asaasCustomerId: customerId,
+          asaasSubscriptionId: subscriptionId,
+        };
+        // Se cupom com mesesDesconto > 0, guardar rastreamento para reverter após N meses
+        if (cupomDesconto && cupomMesesDesconto > 0) {
+          updateData.cupomMesesRestantes = cupomMesesDesconto;
+          updateData.valorPlanoOriginal = PLAN_VALUES_ASAAS[plano || "pro"] ?? 49.9;
+        }
         await prisma.user.update({
           where: { id: user.id },
-          data: { asaasCustomerId: customerId, asaasSubscriptionId: subscriptionId },
+          data: updateData,
         });
         } catch (asaasErr) {
           asaasError = asaasErr instanceof Error ? asaasErr.message : "Erro ao integrar com sistema de pagamento";

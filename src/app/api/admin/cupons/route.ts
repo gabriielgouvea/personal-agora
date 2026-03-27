@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   const session = await getAdminSession();
   if (!session) return NextResponse.json(null, { status: 401 });
 
-  const { codigo, tipo, valor, validade, limiteUsos } = await req.json();
+  const { codigo, tipo, valor, validade, limiteUsos, mesesDesconto } = await req.json();
 
   if (!codigo || !tipo || valor === undefined) {
     return NextResponse.json({ error: "Código, tipo e valor são obrigatórios" }, { status: 400 });
@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
       valor: parseFloat(valor),
       validade: validade ? new Date(validade) : null,
       limiteUsos: limiteUsos ? parseInt(limiteUsos) : 1,
+      mesesDesconto: mesesDesconto ? parseInt(mesesDesconto) : 0,
     },
   });
 

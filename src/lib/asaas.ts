@@ -75,6 +75,10 @@ export async function createAsaasSubscription(
   return sub.id;
 }
 
+export async function updateAsaasSubscriptionValue(subscriptionId: string, value: number): Promise<void> {
+  await asaasReq(`/subscriptions/${subscriptionId}`, "POST", { value });
+}
+
 export async function getSubscriptionPaymentUrl(subscriptionId: string): Promise<string | null> {
   const payments = await asaasReq<{ data: { invoiceUrl?: string }[] }>(
     `/subscriptions/${subscriptionId}/payments`,

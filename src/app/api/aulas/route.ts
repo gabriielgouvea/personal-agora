@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { createOrFindAsaasCustomer, createAulaSubscription } from "@/lib/asaas";
+import { createOrFindAsaasCustomer, createAsaasCharge } from "@/lib/asaas";
 
 // POST /api/aulas — cria reserva + cobrança Asaas
 export async function POST(req: NextRequest) {
@@ -13,9 +13,10 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const { personalId, billingType = "UNDEFINED" } = body as {
+  const { personalId, billingType = "UNDEFINED", codigoCupom } = body as {
     personalId?: string;
     billingType?: "PIX" | "CREDIT_CARD" | "BOLETO" | "UNDEFINED";
+    codigoCupom?: string;
   };
 
   if (!personalId) return NextResponse.json({ error: "personalId obrigatório" }, { status: 400 });
@@ -28,9 +29,28 @@ export async function POST(req: NextRequest) {
   if (!personal) return NextResponse.json({ error: "Personal não encontrado" }, { status: 404 });
 
   const valorStr = personal.valorAproximado?.replace(/[^0-9,\.]/g, "").replace(",", ".") ?? "0";
-  const valor = parseFloat(valorStr);
+  let valor = parseFloat(valorStr);
   if (!valor || valor <= 0) {
     return NextResponse.json({ error: "Personal sem valor definido" }, { status: 400 });
+  }
+
+  // Processar cupom de desconto (se informado)
+  let cupomAplicado: string | null = null;
+  if (codigoCupom) {
+    const cupom = await prisma.cupom.findUnique({ where: { codigo: codigoCupom } });
+    if (cupom && cupom.ativo && cupom.usosAtuais < cupom.limiteUsos &&
+        (!cupom.validade || cupom.validade > new Date())) {
+      await prisma.cupom.update({
+        where: { id: cupom.id },
+        data: { usosAtuais: { increment: 1 } },
+      });
+      if (cupom.tipo === "percentual") {
+        valor = parseFloat((valor * (1 - cupom.valor / 100)).toFixed(2));
+      } else {
+        valor = parseFloat(Math.max(valor - cupom.valor, 0).toFixed(2));
+      }
+      cupomAplicado = cupom.codigo;
+    }
   }
 
   // Buscar aluno completo (para Asaas)
@@ -78,28 +98,37 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ aulaId: aula.id });
   }
 
-  // Cria assinatura recorrente PIX (cobranças mensais com notificação por e-mail)
-  const sub = await createAulaSubscription(
+  // Criar cobrança avulsa no Asaas (PIX / BOLETO / UNDEFINED)
+  const dueDate = new Date();
+  dueDate.setDate(dueDate.getDate() + 1);
+  const dueDateStr = dueDate.toISOString().split("T")[0];
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://personal-agora.vercel.app";
+  const callbackSuccessUrl = `${appUrl}/dashboard/aluno/aulas/sucesso?aulaId=${aula.id}`;
+
+  const charge = await createAsaasCharge(
     alunoCustomerId,
     valor,
-    `Aula mensal com ${personal.nome} - Personal Agora`,
+    dueDateStr,
+    `Aula com ${personal.nome} - Personal Agora`,
     aula.id,
-    "PIX",
+    billingType,
+    callbackSuccessUrl,
   );
 
-  // Salvar subscription e primeiro pagamento na aula
+  // Salvar chargeId e paymentUrl na aula
   await prisma.aula.update({
     where: { id: aula.id },
     data: {
-      asaasSubscriptionId: sub.subscriptionId,
-      asaasChargeId: sub.firstPaymentId,
+      asaasChargeId: charge.id,
+      paymentUrl: charge.invoiceUrl,
     },
   });
 
   return NextResponse.json({
     aulaId: aula.id,
-    subscriptionId: sub.subscriptionId,
-    chargeId: sub.firstPaymentId,
+    paymentUrl: charge.invoiceUrl,
+    chargeId: charge.id,
   });
   } catch (error) {
     console.error("Erro ao criar aula/cobrança:", error);
