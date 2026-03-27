@@ -14,6 +14,9 @@ import {
   Smartphone,
   AlertCircle,
   Lock,
+  Copy,
+  CheckCircle2,
+  Clock,
 } from "lucide-react";
 
 interface Personal {
@@ -79,6 +82,16 @@ export default function ContratarPage() {
   const [contratando, setContratando] = useState(false);
   const [billingType, setBillingType] = useState<"PIX" | "CREDIT_CARD">("PIX");
 
+  // PIX inline state
+  const [pixData, setPixData] = useState<{
+    aulaId: string;
+    qrCodeImage: string;
+    qrCodeText: string;
+    expirationDate: string;
+  } | null>(null);
+  const [copiado, setCopiado] = useState(false);
+  const [pixStatus, setPixStatus] = useState<string>("aguardando_pagamento");
+
   useEffect(() => {
     fetch(`/api/personais/${personalId}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
@@ -86,6 +99,33 @@ export default function ContratarPage() {
       .catch(() => setError("Personal não encontrado."))
       .finally(() => setLoading(false));
   }, [personalId]);
+
+  // Polling de status quando PIX está exibido
+  useEffect(() => {
+    if (!pixData) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/aulas/${pixData.aulaId}/status`);
+        const data = await res.json();
+        if (data.status && data.status !== "aguardando_pagamento") {
+          setPixStatus(data.status);
+          clearInterval(interval);
+          // Redireciona após 2s para o aluno ver a confirmação
+          setTimeout(() => {
+            router.push(`/dashboard/aluno/aulas/sucesso?aulaId=${pixData.aulaId}`);
+          }, 2000);
+        }
+      } catch { /* silencia erros de polling */ }
+    }, 4000); // A cada 4 segundos
+    return () => clearInterval(interval);
+  }, [pixData, router]);
+
+  async function handleCopiarPix() {
+    if (!pixData) return;
+    await navigator.clipboard.writeText(pixData.qrCodeText);
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 3000);
+  }
 
   async function handleContratar() {
     setContratando(true);
@@ -101,12 +141,31 @@ export default function ContratarPage() {
         setError(data.error || "Erro ao criar cobrança.");
         return;
       }
-      if (data.paymentUrl) {
-        window.location.href = data.paymentUrl;
-      } else {
-        // Se não tiver URL de pagamento, redirecionar para a página de aulas
-        router.push("/dashboard/aluno/aulas");
+
+      // Se cartão, redireciona para Asaas (por enquanto)
+      if (billingType === "CREDIT_CARD") {
+        if (data.paymentUrl) {
+          window.location.href = data.paymentUrl;
+        } else {
+          router.push("/dashboard/aluno/aulas");
+        }
+        return;
       }
+
+      // Se PIX, busca o QR Code
+      const pixRes = await fetch(`/api/aulas/${data.aulaId}/pix`);
+      const pixJson = await pixRes.json();
+      if (!pixRes.ok) {
+        setError(pixJson.error || "Erro ao gerar QR Code PIX.");
+        return;
+      }
+
+      setPixData({
+        aulaId: data.aulaId,
+        qrCodeImage: pixJson.qrCodeImage,
+        qrCodeText: pixJson.qrCodeText,
+        expirationDate: pixJson.expirationDate,
+      });
     } catch {
       setError("Erro de conexão. Tente novamente.");
     } finally {
@@ -200,8 +259,95 @@ export default function ContratarPage() {
           </div>
         )}
 
-        {/* Resumo da compra */}
-        {personal && (
+        {/* ── PIX QR Code inline ── */}
+        {pixData && pixStatus === "aguardando_pagamento" && (
+          <div className="bg-zinc-900 border border-yellow-500/30 rounded-2xl p-6">
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-500/10 border border-yellow-500/20 rounded-full mb-4">
+                <Clock className="w-4 h-4 text-yellow-500 animate-pulse" />
+                <span className="text-sm font-semibold text-yellow-400">Aguardando pagamento</span>
+              </div>
+              <h3 className="font-bold text-xl">Pague com PIX</h3>
+              <p className="text-zinc-400 text-sm mt-1">Escaneie o QR Code ou copie o código abaixo</p>
+            </div>
+
+            {/* QR Code */}
+            <div className="flex justify-center mb-6">
+              <div className="bg-white p-4 rounded-2xl">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`data:image/png;base64,${pixData.qrCodeImage}`}
+                  alt="QR Code PIX"
+                  className="w-56 h-56"
+                />
+              </div>
+            </div>
+
+            {/* Valor */}
+            <div className="text-center mb-6">
+              <p className="text-zinc-400 text-sm">Valor</p>
+              <p className="text-3xl font-black text-yellow-400">
+                R$ {personal?.valorAproximado ?? "—"}
+              </p>
+            </div>
+
+            {/* Código Copia e Cola */}
+            <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-4 mb-4">
+              <p className="text-xs text-zinc-400 mb-2 font-semibold">Pix Copia e Cola</p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={pixData.qrCodeText}
+                  className="flex-1 bg-zinc-900 text-zinc-300 text-xs py-2 px-3 rounded-lg border border-zinc-700 truncate"
+                />
+                <button
+                  onClick={handleCopiarPix}
+                  className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1.5 transition shrink-0 ${
+                    copiado
+                      ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                      : "bg-yellow-500 text-black hover:bg-yellow-400"
+                  }`}
+                >
+                  {copiado ? (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      Copiado!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4" />
+                      Copiar
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Info */}
+            <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-4 flex items-start gap-3">
+              <Loader2 className="w-5 h-5 text-yellow-500 animate-spin shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-zinc-300">Confirmação automática</p>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  Após o pagamento, esta página será atualizada automaticamente. Não feche esta aba.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PIX Confirmado */}
+        {pixData && pixStatus !== "aguardando_pagamento" && (
+          <div className="bg-zinc-900 border border-green-500/30 rounded-2xl p-8 text-center">
+            <CheckCircle2 className="w-16 h-16 text-green-400 mx-auto mb-4" />
+            <h3 className="font-bold text-2xl text-green-400 mb-2">Pagamento confirmado!</h3>
+            <p className="text-zinc-400">Redirecionando...</p>
+          </div>
+        )}
+
+        {/* Resumo da compra — só mostra se PIX NÃO está exibido */}
+        {personal && !pixData && (
           <div className="bg-zinc-900 border border-yellow-500/30 rounded-2xl p-6">
             <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-yellow-500" />
@@ -266,17 +412,22 @@ export default function ContratarPage() {
                   <Loader2 className="w-5 h-5 animate-spin" />
                   Aguarde...
                 </>
+              ) : billingType === "PIX" ? (
+                "Gerar PIX"
               ) : (
                 "Ir para pagamento"
               )}
             </button>
-            <p className="text-center text-xs text-zinc-600 mt-3">
-              Você será redirecionado para o ambiente seguro de pagamento Asaas.
-            </p>
+            {billingType === "CREDIT_CARD" && (
+              <p className="text-center text-xs text-zinc-600 mt-3">
+                Você será redirecionado para o ambiente seguro de pagamento Asaas.
+              </p>
+            )}
           </div>
         )}
 
-        {/* Vantagens de pagar pela plataforma */}
+        {/* Vantagens de pagar pela plataforma — esconde quando PIX exibido */}
+        {!pixData && (
         <div>
           <h3 className="font-bold text-lg mb-4 text-center">
             Por que pagar pela <span className="text-yellow-500">plataforma</span>?
@@ -308,8 +459,10 @@ export default function ContratarPage() {
             })}
           </div>
         </div>
+        )}
 
         {/* Aviso de segurança */}
+        {!pixData && (
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 flex items-start gap-4">
           <ShieldCheck className="w-6 h-6 text-green-400 shrink-0 mt-0.5" />
           <div>
@@ -319,6 +472,7 @@ export default function ContratarPage() {
             </p>
           </div>
         </div>
+        )}
       </div>
     </div>
   );

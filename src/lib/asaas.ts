@@ -146,6 +146,21 @@ export async function cancelAsaasSubscription(subscriptionId: string): Promise<v
   await asaasReq<{ deleted: boolean }>(`/subscriptions/${subscriptionId}`, "DELETE");
 }
 
+export interface PixQrCode {
+  encodedImage: string; // base64 da imagem do QR Code
+  payload: string;      // código Pix Copia e Cola
+  expirationDate: string;
+}
+
+export async function getPixQrCode(paymentId: string): Promise<PixQrCode> {
+  return asaasReq<PixQrCode>(`/payments/${paymentId}/pixQrCode`, "GET");
+}
+
+export async function getPaymentStatus(paymentId: string): Promise<{ status: string }> {
+  const payment = await asaasReq<AsaasPayment>(`/payments/${paymentId}`, "GET");
+  return { status: payment.status };
+}
+
 export async function getPaymentCheckoutUrl(
   paymentId: string,
   billingType: "CREDIT_CARD" | "PIX"
