@@ -171,8 +171,10 @@ function CadastroPersonalContent() {
   const [billingType, setBillingType] = useState<"PIX" | "CREDIT_CARD" | "">();
 
   /* uploads locais (preview) */
+  const [fotoPerfil, setFotoPerfil] = useState<File | null>(null);
   const [fotoCref, setFotoCref] = useState<File | null>(null);
   const [selfie, setSelfie] = useState<File | null>(null);
+  const fotoPerfilRef = useRef<HTMLInputElement>(null);
   const fotoCrefRef = useRef<HTMLInputElement>(null);
   const selfieRef = useRef<HTMLInputElement>(null);
 
@@ -313,8 +315,9 @@ function CadastroPersonalContent() {
 
       // Upload de arquivos se houver
       const { id, paymentUrl, asaasError } = await res.json();
-      if (fotoCref || selfie) {
+      if (fotoPerfil || fotoCref || selfie) {
         const formData = new FormData();
+        if (fotoPerfil) formData.append("fotoPerfil", fotoPerfil);
         if (fotoCref) formData.append("fotoCref", fotoCref);
         if (selfie) formData.append("selfie", selfie);
         await fetch(`/api/cadastro/personal/${id}/upload`, {
@@ -979,6 +982,66 @@ function CadastroPersonalContent() {
           {/* ╔══════════ STEP 3 — Documentos ══════════╗ */}
           {step === 2 && (
             <div className="space-y-5 animate-in fade-in duration-300">
+
+              {/* ── Foto de Perfil — DESTAQUE ── */}
+              <div className="rounded-2xl bg-yellow-500/5 border border-yellow-500/20 p-5">
+                <div className="flex items-start gap-3 mb-4">
+                  <span className="text-2xl">📸</span>
+                  <div>
+                    <p className="text-sm font-bold text-white">Foto de Perfil — A sua vitrine!</p>
+                    <p className="text-xs text-zinc-400 mt-0.5 leading-relaxed">
+                      Essa foto <span className="text-yellow-400 font-semibold">aparece para todos os alunos</span> ao buscar um personal.
+                      Uma boa foto profissional aumenta muito suas chances de ser escolhido.
+                      Use uma foto clara, com boa iluminação e que transmita confiança.
+                    </p>
+                  </div>
+                </div>
+                <input
+                  ref={fotoPerfilRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) setFotoPerfil(f);
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => fotoPerfilRef.current?.click()}
+                  className={`w-full rounded-xl border-2 border-dashed transition overflow-hidden ${
+                    fotoPerfil
+                      ? "border-yellow-500/40 bg-yellow-500/5"
+                      : "border-yellow-500/30 hover:border-yellow-500/60"
+                  }`}
+                >
+                  {fotoPerfil ? (
+                    <div className="flex items-center gap-4 p-4">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={URL.createObjectURL(fotoPerfil)}
+                        alt="Foto de perfil"
+                        className="w-20 h-20 rounded-xl object-cover border-2 border-yellow-500/30"
+                      />
+                      <div className="text-left">
+                        <p className="text-sm text-white font-semibold">{fotoPerfil.name}</p>
+                        <p className="text-xs text-yellow-500 mt-0.5">✓ Foto selecionada</p>
+                        <p className="text-xs text-zinc-500 mt-1">Clique para trocar</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-3 py-8 px-4">
+                      <div className="w-16 h-16 rounded-full bg-zinc-800 border-2 border-dashed border-yellow-500/40 flex items-center justify-center">
+                        <Camera className="w-7 h-7 text-yellow-500/60" />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-semibold text-white">Adicionar foto de perfil</p>
+                        <p className="text-xs text-zinc-500 mt-1">JPG ou PNG • Máx. 4MB • A foto conta muito!</p>
+                      </div>
+                    </div>
+                  )}
+                </button>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={labelCls}>CREF</label>

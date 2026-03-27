@@ -10,10 +10,16 @@ export async function POST(
 ) {
   try {
     const formData = await req.formData();
+    const fotoPerfil = formData.get("fotoPerfil") as File | null;
     const fotoCref = formData.get("fotoCref") as File | null;
     const selfie = formData.get("selfie") as File | null;
 
-    const updates: { fotoCrefUrl?: string; selfieUrl?: string } = {};
+    const updates: { avatarUrl?: string; fotoCrefUrl?: string; selfieUrl?: string } = {};
+
+    if (fotoPerfil && fotoPerfil.size > 0) {
+      const [res] = await utapi.uploadFiles([fotoPerfil]);
+      if (res.data?.url) updates.avatarUrl = res.data.url;
+    }
 
     if (fotoCref && fotoCref.size > 0) {
       const [res] = await utapi.uploadFiles([fotoCref]);
