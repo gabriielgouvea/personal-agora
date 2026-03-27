@@ -40,6 +40,7 @@ export async function GET() {
     disponibilidade: user.disponibilidade || null,
     modalidades: user.modalidades || null,
     regioes: user.regioes || null,
+    academias: user.academias || null,
     plano: user.plano || null,
   });
 }
@@ -59,6 +60,7 @@ export async function PATCH(request: Request) {
     "isWhatsapp", "isTelefone", "dataNascimento", "sexo",
     "cep", "rua", "bairro", "cidade", "estado",
     "numero", "complemento", "avatarUrl", "disponibilidade",
+    "academias",
   ];
   for (const f of fields) {
     if (body[f] !== undefined) allowed[f] = body[f];
