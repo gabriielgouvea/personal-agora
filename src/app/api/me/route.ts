@@ -41,6 +41,15 @@ export async function GET() {
     modalidades: user.modalidades || null,
     regioes: user.regioes || null,
     academias: user.academias || null,
+    esportes: user.esportes || null,
+    temWellhub: user.temWellhub,
+    temTotalPass: user.temTotalPass,
+    experiencia: user.experiencia || null,
+    tempoTreino: user.tempoTreino || null,
+    parqRespostas: user.parqRespostas || null,
+    parqPreenchidoEm: user.parqPreenchidoEm || null,
+    isPCD: user.isPCD,
+    tipoDeficiencia: user.tipoDeficiencia || null,
     plano: user.plano || null,
   });
 }
@@ -60,7 +69,10 @@ export async function PATCH(request: Request) {
     "isWhatsapp", "isTelefone", "dataNascimento", "sexo",
     "cep", "rua", "bairro", "cidade", "estado",
     "numero", "complemento", "avatarUrl", "disponibilidade",
-    "academias",
+    "academias", "esportes", "temWellhub", "temTotalPass",
+    "experiencia", "tempoTreino",
+    "parqRespostas", "parqPreenchidoEm",
+    "isPCD", "tipoDeficiencia",
   ];
   for (const f of fields) {
     if (body[f] !== undefined) allowed[f] = body[f];

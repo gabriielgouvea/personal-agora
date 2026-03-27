@@ -41,6 +41,14 @@ model User {
   tempoTreino    String?
   avatarUrl      String?
 
+  // PAR-Q (Physical Activity Readiness Questionnaire)
+  parqRespostas    String?   // JSON com respostas do PAR-Q
+  parqPreenchidoEm DateTime?
+
+  // PCD (Pessoa com Deficiência)
+  isPCD            Boolean @default(false)
+  tipoDeficiencia  String?
+
   // Campos específicos de personal
   cref             String?
   validadeCref     String?

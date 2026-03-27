@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -11,8 +11,6 @@ import {
   ArrowRight,
   Check,
   Loader2,
-  X,
-  Search,
   AlertTriangle,
 } from "lucide-react";
 import PasswordField from "@/components/PasswordField";
@@ -25,24 +23,6 @@ import {
   fetchAddressByCep,
 } from "@/lib/masks";
 import { isValidCPF } from "@/lib/utils";
-
-/* ── Placeholder academias (admin cadastra depois) ── */
-const ACADEMIAS = [
-  "Ironberg Alphaville",
-  "Ironberg Barra Funda",
-  "Ironberg São Caetano",
-  "Ironberg Pinheiros",
-  "Bluefit Alphaville",
-  "Bluefit Barueri",
-  "Smart Fit Alphaville",
-  "Smart Fit Tamboré",
-  "Bio Ritmo Alphaville",
-  "Bodytech Alphaville",
-  "Companhia Athletica Alphaville",
-  "Runner Alphaville",
-];
-
-const ESPORTES = ["Musculação", "Mobilidade", "Treino Funcional"] as const;
 
 /* ── Schema ── */
 const schema = z
@@ -65,12 +45,6 @@ const schema = z
     estado: z.string().optional(),
     numero: z.string().min(1, "Obrigatório"),
     complemento: z.string().optional(),
-    esportes: z.array(z.string()).min(1, "Selecione pelo menos um"),
-    academias: z.array(z.string()),
-    temWellhub: z.boolean(),
-    temTotalPass: z.boolean(),
-    experiencia: z.string().min(1, "Selecione"),
-    tempoTreino: z.string().optional(),
   })
   .refine((d) => d.isWhatsapp || d.isTelefone, {
     message: "Marque pelo menos uma opção",
@@ -87,10 +61,9 @@ type FormData = z.infer<typeof schema>;
 const STEP_FIELDS: (keyof FormData)[][] = [
   ["nome", "sobrenome", "email", "senha", "confirmarSenha", "telefone"],
   ["dataNascimento", "sexo", "cpf", "cep", "numero"],
-  ["esportes", "experiencia"],
 ];
 
-const STEP_LABELS = ["Conta", "Pessoal", "Treino"];
+const STEP_LABELS = ["Conta", "Pessoal"];
 
 /* ── Estilos reutilizáveis ── */
 const inputCls =
@@ -113,10 +86,7 @@ export default function CadastroAlunoPage() {
   } | null>(null);
   const router = useRouter();
 
-  /* academia search */
-  const [acSearch, setAcSearch] = useState("");
-  const [acOpen, setAcOpen] = useState(false);
-  const acRef = useRef<HTMLDivElement>(null);
+
 
   const {
     register,
@@ -130,12 +100,6 @@ export default function CadastroAlunoPage() {
     defaultValues: {
       isWhatsapp: true,
       isTelefone: false,
-      esportes: [],
-      academias: [],
-      temWellhub: false,
-      temTotalPass: false,
-      experiencia: "",
-      tempoTreino: "",
       rua: "",
       bairro: "",
       cidade: "",
@@ -145,15 +109,6 @@ export default function CadastroAlunoPage() {
   });
 
   const w = watch();
-
-  /* fechar dropdown academia ao clicar fora */
-  useEffect(() => {
-    function handler(e: MouseEvent) {
-      if (acRef.current && !acRef.current.contains(e.target as Node)) setAcOpen(false);
-    }
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
 
   /* ── Navegação entre steps ── */
   async function nextStep() {
@@ -270,32 +225,6 @@ export default function CadastroAlunoPage() {
       }
     } catch { /* silencioso */ }
   }
-
-  /* ── Toggles ── */
-  function toggleEsporte(e: string) {
-    const cur = w.esportes || [];
-    setValue("esportes", cur.includes(e) ? cur.filter((x) => x !== e) : [...cur, e], {
-      shouldValidate: true,
-    });
-  }
-
-  function addAcademia(a: string) {
-    const cur = w.academias || [];
-    if (!cur.includes(a)) setValue("academias", [...cur, a]);
-    setAcSearch("");
-    setAcOpen(false);
-  }
-
-  function removeAcademia(a: string) {
-    setValue("academias", (w.academias || []).filter((x) => x !== a));
-  }
-
-  const filteredAc = ACADEMIAS.filter(
-    (a) =>
-      acSearch.length >= 2 &&
-      a.toLowerCase().includes(acSearch.toLowerCase()) &&
-      !(w.academias || []).includes(a)
-  );
 
   /* ── Tela de sucesso ── */
   if (done) {
@@ -598,152 +527,6 @@ export default function CadastroAlunoPage() {
                   <input {...register("complemento")} className={inputCls} placeholder="Apto, bloco..." />
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* ╔══════════ STEP 3 — Treino ══════════╗ */}
-          {step === 2 && (
-            <div className="space-y-6 animate-in fade-in duration-300">
-              {/* Esportes */}
-              <div>
-                <label className={labelCls}>Qual modalidade procura?</label>
-                <div className="flex flex-wrap gap-3 mt-1">
-                  {ESPORTES.map((e) => {
-                    const active = (w.esportes || []).includes(e);
-                    return (
-                      <button
-                        key={e}
-                        type="button"
-                        onClick={() => toggleEsporte(e)}
-                        className={`px-4 py-2 rounded-full text-sm font-medium border transition ${
-                          active
-                            ? "bg-yellow-500 text-black border-yellow-500"
-                            : "bg-zinc-800 text-zinc-300 border-zinc-700 hover:border-yellow-500/50"
-                        }`}
-                      >
-                        {e}
-                      </button>
-                    );
-                  })}
-                </div>
-                {errors.esportes && <p className={errorCls}>{errors.esportes.message}</p>}
-              </div>
-
-              {/* Academias */}
-              <div ref={acRef}>
-                <label className={labelCls}>Em qual academia você treina?</label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-                  <input
-                    type="text"
-                    value={acSearch}
-                    onChange={(e) => {
-                      setAcSearch(e.target.value);
-                      setAcOpen(true);
-                    }}
-                    onFocus={() => setAcOpen(true)}
-                    className={`${inputCls} pl-10`}
-                    placeholder="Buscar academia..."
-                  />
-                  {acOpen && filteredAc.length > 0 && (
-                    <div className="absolute z-20 left-0 right-0 mt-1 bg-zinc-800 border border-zinc-700 rounded-lg max-h-48 overflow-y-auto shadow-xl">
-                      {filteredAc.map((a) => (
-                        <button
-                          key={a}
-                          type="button"
-                          onClick={() => addAcademia(a)}
-                          className="w-full text-left px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-700 transition"
-                        >
-                          {a}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Selected */}
-                {(w.academias || []).length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {(w.academias || []).map((a) => (
-                      <span
-                        key={a}
-                        className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-500 text-xs font-medium border border-yellow-500/20"
-                      >
-                        {a}
-                        <button type="button" onClick={() => removeAcademia(a)}>
-                          <X className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Wellhub / TotalPass */}
-              <div>
-                <label className={labelCls}>Benefícios</label>
-                <div className="flex gap-6 mt-1">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      {...register("temWellhub")}
-                      className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 accent-yellow-500"
-                    />
-                    <span className="text-sm text-zinc-300">Tenho Wellhub (Gympass)</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      {...register("temTotalPass")}
-                      className="w-4 h-4 rounded border-zinc-600 bg-zinc-800 accent-yellow-500"
-                    />
-                    <span className="text-sm text-zinc-300">Tenho TotalPass</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Experiência */}
-              <div>
-                <label className={labelCls}>Tempo de treino</label>
-                <div className="flex flex-col gap-3 mt-1">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      value="iniciante"
-                      {...register("experiencia")}
-                      className="w-4 h-4 accent-yellow-500"
-                    />
-                    <span className="text-sm text-zinc-300">Estou começando agora</span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      value="ja_treino"
-                      {...register("experiencia")}
-                      className="w-4 h-4 accent-yellow-500"
-                    />
-                    <span className="text-sm text-zinc-300">Já treino</span>
-                  </label>
-                </div>
-                {errors.experiencia && <p className={errorCls}>{errors.experiencia.message}</p>}
-              </div>
-
-              {w.experiencia === "ja_treino" && (
-                <div>
-                  <label className={labelCls}>Há quanto tempo?</label>
-                  <select
-                    {...register("tempoTreino")}
-                    className={`${inputCls} appearance-none`}
-                  >
-                    <option value="">Selecione</option>
-                    <option value="menos_6">Menos de 6 meses</option>
-                    <option value="6_12">6 meses a 1 ano</option>
-                    <option value="1_2">1 a 2 anos</option>
-                    <option value="2_5">2 a 5 anos</option>
-                    <option value="mais_5">Mais de 5 anos</option>
-                  </select>
-                </div>
-              )}
             </div>
           )}
 

@@ -21,12 +21,6 @@ const registerSchema = z.object({
   estado: z.string().optional(),
   numero: z.string().min(1),
   complemento: z.string().optional(),
-  esportes: z.array(z.string()).min(1),
-  academias: z.array(z.string()),
-  temWellhub: z.boolean(),
-  temTotalPass: z.boolean(),
-  experiencia: z.string().min(1),
-  tempoTreino: z.string().optional(),
 });
 
 export async function POST(request: Request) {
@@ -99,12 +93,6 @@ export async function POST(request: Request) {
         estado: data.estado || null,
         numero: data.numero || null,
         complemento: data.complemento || null,
-        esportes: JSON.stringify(data.esportes),
-        academias: JSON.stringify(data.academias),
-        temWellhub: data.temWellhub,
-        temTotalPass: data.temTotalPass,
-        experiencia: data.experiencia,
-        tempoTreino: data.tempoTreino || null,
       },
     });
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Search, Dumbbell, MapPin, MessageCircle, AlertTriangle } from "lucide-react";
+import { Search, Dumbbell, MapPin, MessageCircle, AlertTriangle, ClipboardCheck } from "lucide-react";
 
 interface UserData {
   nome?: string;
@@ -11,19 +11,25 @@ interface UserData {
   telefone?: string;
   dataNascimento?: string;
   sexo?: string;
+  esportes?: string;
+  parqPreenchidoEm?: string;
 }
 
 export default function DashboardAlunoPage() {
   const [nome, setNome] = useState("");
   const [perfilIncompleto, setPerfilIncompleto] = useState(false);
+  const [parqPreenchido, setParqPreenchido] = useState(false);
 
   useEffect(() => {
     fetch("/api/me")
       .then((r) => (r.ok ? r.json() : null))
       .then((data: UserData | null) => {
         if (data?.nome) setNome(data.nome);
-        if (data && (!data.cpf || !data.cep || !data.telefone || !data.dataNascimento || !data.sexo)) {
-          setPerfilIncompleto(true);
+        if (data) {
+          if (!data.cpf || !data.cep || !data.telefone || !data.dataNascimento || !data.sexo || !data.esportes) {
+            setPerfilIncompleto(true);
+          }
+          if (data.parqPreenchidoEm) setParqPreenchido(true);
         }
       });
   }, []);
@@ -40,18 +46,37 @@ export default function DashboardAlunoPage() {
       {/* Banner de perfil incompleto */}
       {perfilIncompleto && (
         <Link
-          href="/dashboard/aluno/conta"
+          href="/dashboard/aluno/completar-perfil"
           className="flex items-start gap-3 p-4 mb-6 rounded-xl bg-yellow-500/10 border border-yellow-500/30 hover:border-yellow-500/50 transition group"
         >
           <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="text-sm font-bold text-yellow-400">Complete seu cadastro</p>
             <p className="text-xs text-zinc-400 mt-0.5">
-              Algumas informações do seu perfil estão faltando (CPF, endereço, etc.). Complete para poder contratar aulas com pagamento seguro.
+              Preencha seu perfil de treino, questionário de saúde (PAR-Q) e outras informações para uma melhor experiência.
             </p>
           </div>
           <span className="text-xs text-yellow-500 font-semibold whitespace-nowrap group-hover:underline mt-0.5">
             Completar →
+          </span>
+        </Link>
+      )}
+
+      {/* PAR-Q status */}
+      {!perfilIncompleto && !parqPreenchido && (
+        <Link
+          href="/dashboard/aluno/completar-perfil"
+          className="flex items-start gap-3 p-4 mb-6 rounded-xl bg-yellow-500/10 border border-yellow-500/30 hover:border-yellow-500/50 transition group"
+        >
+          <ClipboardCheck className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-bold text-yellow-400">Preencha o questionário PAR-Q</p>
+            <p className="text-xs text-zinc-400 mt-0.5">
+              O PAR-Q é obrigatório para a prática de atividades físicas.
+            </p>
+          </div>
+          <span className="text-xs text-yellow-500 font-semibold whitespace-nowrap group-hover:underline mt-0.5">
+            Preencher →
           </span>
         </Link>
       )}
