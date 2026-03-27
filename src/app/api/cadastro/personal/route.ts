@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
 import { createOrFindAsaasCustomer, createAsaasSubscription, getSubscriptionPaymentUrl } from "@/lib/asaas";
 import { isValidCPF } from "@/lib/utils";
+import { rateLimit } from "@/lib/rate-limit";
 
 const registerSchema = z.object({
   nome: z.string().min(2),
@@ -45,6 +46,16 @@ const registerSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    // Rate limit: 5 cadastros por IP a cada 30 minutos
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const rl = rateLimit(`register:${ip}`, { limit: 5, windowSeconds: 1800 });
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: "Muitas tentativas. Aguarde alguns minutos." },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const result = registerSchema.safeParse(body);
 

@@ -41,6 +41,10 @@ export async function GET(req: NextRequest) {
     .setExpirationTime("8h")
     .sign(SESSION_SECRET);
 
+  console.log(
+    `[IMPERSONATE] Admin ${adminSession.email} entrou como ${tipo} userId=${user.id} (${user.email}) em ${new Date().toISOString()}`
+  );
+
   const dest = tipo === "personal" ? "/dashboard/personal" : "/dashboard/aluno";
   const response = NextResponse.redirect(new URL(dest, req.url));
 

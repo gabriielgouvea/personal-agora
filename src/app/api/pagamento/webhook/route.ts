@@ -10,11 +10,14 @@ export async function POST(req: NextRequest) {
   try {
     // Verificar token de segurança do Asaas (configurado no painel → Integrações → Webhooks)
     const webhookToken = process.env.ASAAS_WEBHOOK_TOKEN;
-    if (webhookToken) {
-      const receivedToken = req.headers.get("asaas-access-token");
-      if (receivedToken !== webhookToken) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
+    if (!webhookToken) {
+      console.error("ASAAS_WEBHOOK_TOKEN não configurado");
+      return NextResponse.json({ error: "Webhook não configurado" }, { status: 500 });
+    }
+
+    const receivedToken = req.headers.get("asaas-access-token");
+    if (receivedToken !== webhookToken) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json();

@@ -2,8 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomBytes, createHash } from "crypto";
 import prisma from "@/lib/prisma";
 import { sendPasswordResetEmail } from "@/lib/email";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 5 pedidos por IP a cada 15 minutos
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const rl = rateLimit(`forgot:${ip}`, { limit: 5, windowSeconds: 900 });
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: "Muitas tentativas. Aguarde alguns minutos." },
+      { status: 429 }
+    );
+  }
+
   const { email } = await req.json();
 
   if (!email || typeof email !== "string") {

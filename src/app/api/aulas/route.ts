@@ -5,6 +5,7 @@ import { createOrFindAsaasCustomer, createAsaasCharge } from "@/lib/asaas";
 
 // POST /api/aulas — cria reserva + cobrança Asaas
 export async function POST(req: NextRequest) {
+  try {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   if (session.tipo !== "aluno" && session.tipo !== "ambos") {
@@ -39,6 +40,13 @@ export async function POST(req: NextRequest) {
   });
   if (!aluno) return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
 
+  if (!aluno.cpf || aluno.cpf.replace(/\D/g, "").length !== 11) {
+    return NextResponse.json(
+      { error: "CPF não cadastrado. Atualize seu perfil antes de contratar." },
+      { status: 400 }
+    );
+  }
+
   // Criar/encontrar customer Asaas do aluno
   let alunoCustomerId = aluno.asaasCustomerId;
   if (!alunoCustomerId) {
@@ -46,7 +54,7 @@ export async function POST(req: NextRequest) {
       aluno.nome,
       aluno.sobrenome,
       aluno.email,
-      aluno.cpf ?? "",
+      aluno.cpf,
     );
     await prisma.user.update({
       where: { id: aluno.id },
@@ -96,6 +104,11 @@ export async function POST(req: NextRequest) {
     paymentUrl: charge.invoiceUrl,
     chargeId: charge.id,
   });
+  } catch (error) {
+    console.error("Erro ao criar aula/cobrança:", error);
+    const message = error instanceof Error ? error.message : "Erro ao processar pagamento";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
 
 // GET /api/aulas — lista aulas do usuário logado

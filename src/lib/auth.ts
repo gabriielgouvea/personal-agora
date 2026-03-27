@@ -2,9 +2,11 @@ import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
-const SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "personal-agora-secret-key-change-in-prod"
-);
+if (!process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET não definido. Configure a variável de ambiente.");
+}
+
+const SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
 export const SESSION_COOKIE_NAME = "pa_session";
 export const SESSION_SECRET = SECRET;

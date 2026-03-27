@@ -10,29 +10,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model PersonalTrainer {
-  id                    String   @id @default(uuid())
-  name                  String
-  dateOfBirth           DateTime
-  gender                String 
-  studentGenderPreference String 
-  
-  academies             String 
-  
-  residentialAvailable  Boolean
-  cref                  String   @unique
-  crefValidity          DateTime
-  
-  whatsapp              String
-  email                 String
-  instagram             String?
-  photoUrl              String?
-  contactConsent        Boolean
-  
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-}
-
 model User {
   id             String   @id @default(uuid())
   tipo           String   // "aluno" | "personal"
