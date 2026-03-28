@@ -96,6 +96,10 @@ export interface AsaasSubscription {
   billingType: string;
   description: string;
   deleted: boolean;
+  // Cartão de crédito (presentes quando billingType === "CREDIT_CARD")
+  creditCardNumber?: string;  // ex: "xxxx xxxx xxxx 1234"
+  creditCardBrand?: string;   // ex: "VISA", "MASTERCARD"
+  creditCardToken?: string;
 }
 
 export interface AsaasPayment {
@@ -285,4 +289,42 @@ export async function getPaymentCheckoutUrl(
   await asaasReq<object>(`/payments/${paymentId}`, "PUT", { billingType });
   const payment = await asaasReq<AsaasPayment>(`/payments/${paymentId}`, "GET");
   return payment.invoiceUrl ?? null;
+}
+
+// ── Cartão de recorrência da assinatura ──
+
+export async function updateSubscriptionCreditCard(
+  subscriptionId: string,
+  creditCard: CreditCardData,
+  creditCardHolderInfo: CreditCardHolderInfo,
+): Promise<{ creditCardNumber: string; creditCardBrand: string }> {
+  return asaasReq<{ creditCardNumber: string; creditCardBrand: string }>(
+    `/subscriptions/${subscriptionId}/creditCard`,
+    "POST",
+    { creditCard, creditCardHolderInfo, updatePendingPayments: true }
+  );
+}
+
+export async function removeSubscriptionCreditCard(subscriptionId: string): Promise<void> {
+  // Muda billingType para UNDEFINED — próximas cobranças gerarão invoices avulsos
+  await asaasReq(`/subscriptions/${subscriptionId}`, "POST", { billingType: "UNDEFINED" });
+}
+
+// ── Transferências (saques para personais) ──
+
+export async function createPixTransfer(
+  value: number,
+  pixAddressKey: string,
+  pixAddressKeyType: "CPF" | "CNPJ" | "EMAIL" | "PHONE" | "EVP",
+  description: string,
+  externalReference: string,
+): Promise<{ id: string; status: string }> {
+  return asaasReq<{ id: string; status: string }>("/transfers", "POST", {
+    value,
+    operationType: "PIX",
+    pixAddressKey,
+    pixAddressKeyType,
+    description,
+    externalReference,
+  });
 }

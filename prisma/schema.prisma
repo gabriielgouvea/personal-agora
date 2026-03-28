@@ -60,6 +60,11 @@ model User {
   valorAproximado  String?
   tipoChavePix     String?
   chavePix         String?
+  // Conta bancária para recebimento de saques
+  banco            String?
+  agencia          String?
+  contaBancaria    String?
+  tipoConta        String?  // "corrente" | "poupanca"
   modalidades      String?  // JSON array: ["musculação","funcional",...]
   regioes          String?  // JSON array: ["Alphaville","Tamboré",...]
   preferenciaGeneroAluno String? // "homens" | "mulheres" | "ambos"
@@ -102,6 +107,7 @@ model User {
   avaliacoesRecebidas Avaliacao[] @relation("AvaliadoAvaliacoes")
   relatosFeitos       Relato[]   @relation("AutorRelatos")
   relatosRecebidos    Relato[]   @relation("RelatadoRelatos")
+  saques              Saque[]    @relation("SaquesPersonal")
 }
 
 model Aula {
@@ -199,10 +205,29 @@ model Relato {
   autor         User     @relation("AutorRelatos", fields: [autorId], references: [id])
   relatadoId    String
   relatado      User     @relation("RelatadoRelatos", fields: [relatadoId], references: [id])
-  categoria     String   // "nao_compareceu" | "assedio" | "comportamento_inadequado" | "atraso_excessivo" | "cobranca_indevida" | "qualidade_servico" | "discriminacao" | "outro"
+  categoria     String
   descricao     String
-  status        String   @default("pendente") // "pendente" | "em_analise" | "resolvido" | "arquivado"
+  status        String   @default("pendente")
   respostaAdmin String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+model Saque {
+  id              String    @id @default(uuid())
+  personalId      String
+  personal        User      @relation("SaquesPersonal", fields: [personalId], references: [id])
+  valor           Float
+  destino         String    // "pix" | "banco"
+  chavePix        String?
+  banco           String?
+  agencia         String?
+  contaNumero     String?
+  tipoConta       String?   // "corrente" | "poupanca"
+  status          String    @default("pendente") // "pendente" | "processando" | "pago" | "recusado"
+  asaasTransferId String?
+  obs             String?
+  processadoEm   DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }

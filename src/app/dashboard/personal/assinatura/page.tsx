@@ -8,6 +8,8 @@ import {
   XCircle,
   Clock,
   ChevronDown,
+  Trash2,
+  Edit2,
 } from "lucide-react";
 
 interface AsaasPayment {
@@ -31,6 +33,12 @@ interface AssinaturaData {
   cancelamentoMotivo: string | null;
   overdue: AsaasPayment[];
   pending: AsaasPayment[];
+}
+
+interface CartaoData {
+  billingType: string | null;
+  creditCardNumber: string | null;
+  creditCardBrand: string | null;
 }
 
 const MOTIVOS_CANCELAMENTO = [
@@ -79,6 +87,15 @@ export default function AssinaturaPage() {
   const [payBillingType, setPayBillingType] = useState<"CREDIT_CARD" | "PIX">("PIX");
   const [payLoading, setPayLoading] = useState(false);
 
+  // Cartão da assinatura
+  const [cartao, setCartao] = useState<CartaoData | null>(null);
+  const [cartaoLoading, setCartaoLoading] = useState(true);
+  const [showCardModal, setShowCardModal] = useState(false);
+  const [cardForm, setCardForm] = useState({ holderName: "", number: "", expiryMonth: "", expiryYear: "", ccv: "" });
+  const [cardLoading, setCardLoading] = useState(false);
+  const [cardError, setCardError] = useState<string | null>(null);
+  const [removeCardLoading, setRemoveCardLoading] = useState(false);
+
   // Ativar plano (sem Asaas)
   const [ativarBillingType, setAtivarBillingType] = useState<"PIX" | "CREDIT_CARD">("PIX");
   const [ativarLoading, setAtivarLoading] = useState(false);
@@ -94,7 +111,49 @@ export default function AssinaturaPage() {
       })
       .catch(() => setError("Erro ao carregar dados da assinatura."))
       .finally(() => setLoading(false));
+
+    fetch("/api/me/cartao-assinatura")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d) setCartao(d); })
+      .finally(() => setCartaoLoading(false));
   }, []);
+
+  async function handleUpdateCard() {
+    setCardLoading(true);
+    setCardError(null);
+    try {
+      const r = await fetch("/api/me/cartao-assinatura", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(cardForm),
+      });
+      const j = await r.json();
+      if (!r.ok) {
+        setCardError(j.error ?? "Erro ao atualizar cartão.");
+        return;
+      }
+      setCartao({ billingType: "CREDIT_CARD", creditCardNumber: j.creditCardNumber, creditCardBrand: j.creditCardBrand });
+      setShowCardModal(false);
+      setCardForm({ holderName: "", number: "", expiryMonth: "", expiryYear: "", ccv: "" });
+    } catch {
+      setCardError("Erro de conexão. Tente novamente.");
+    } finally {
+      setCardLoading(false);
+    }
+  }
+
+  async function handleRemoveCard() {
+    if (!confirm("Tem certeza que deseja remover o cartão? A assinatura voltará a ser cobrada via link de pagamento.")) return;
+    setRemoveCardLoading(true);
+    try {
+      const r = await fetch("/api/me/cartao-assinatura", { method: "DELETE" });
+      if (r.ok) {
+        setCartao((prev) => prev ? { ...prev, billingType: "UNDEFINED", creditCardNumber: null, creditCardBrand: null } : prev);
+      }
+    } finally {
+      setRemoveCardLoading(false);
+    }
+  }
 
   async function handleCancelar() {
     if (!motivoSelecionado) {
@@ -456,6 +515,62 @@ export default function AssinaturaPage() {
         </div>
       )}
 
+      {/* Cartão da assinatura */}
+      {data.planoAtivo && !cancelado && !data.semAsaas && (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4">
+          <div className="flex items-center gap-2 text-zinc-400">
+            <CreditCard className="h-5 w-5" />
+            <h2 className="font-bold text-sm">Forma de pagamento da assinatura</h2>
+          </div>
+
+          {cartaoLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <div className="animate-spin h-6 w-6 border-2 border-yellow-500 border-t-transparent rounded-full" />
+            </div>
+          ) : cartao?.billingType === "CREDIT_CARD" && cartao.creditCardNumber ? (
+            <div className="space-y-3">
+              <div className="bg-zinc-800/60 rounded-xl p-4 flex items-center gap-4">
+                <CreditCard className="h-8 w-8 text-zinc-400" />
+                <div>
+                  <p className="text-xs text-zinc-500 mb-0.5">{cartao.creditCardBrand ?? "Cartão"}</p>
+                  <p className="font-bold text-white text-sm font-mono">{cartao.creditCardNumber}</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setShowCardModal(true); setCardError(null); }}
+                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-zinc-300 border border-zinc-700 hover:border-zinc-500 rounded-xl transition-colors"
+                >
+                  <Edit2 className="h-3.5 w-3.5" />
+                  Trocar cartão
+                </button>
+                <button
+                  onClick={handleRemoveCard}
+                  disabled={removeCardLoading}
+                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-red-400 border border-red-400/40 hover:bg-red-400/10 disabled:opacity-50 rounded-xl transition-colors"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  {removeCardLoading ? "Removendo..." : "Remover cartão"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-zinc-400">
+                Sua assinatura está sendo cobrada via <strong className="text-white">link de pagamento / PIX</strong>. Cadastre um cartão para cobranças automáticas sem precisar pagar manualmente todo mês.
+              </p>
+              <button
+                onClick={() => { setShowCardModal(true); setCardError(null); }}
+                className="flex items-center gap-2 px-4 py-2.5 bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-sm rounded-xl transition-colors"
+              >
+                <CreditCard className="h-4 w-4" />
+                Cadastrar cartão de crédito
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Cancelar assinatura */}
       {!cancelado && data.planoAtivo && !data.semAsaas && (
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
@@ -470,6 +585,98 @@ export default function AssinaturaPage() {
           >
             Cancelar assinatura
           </button>
+        </div>
+      )}
+
+      {/* Modal cartão */}
+      {showCardModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-md space-y-5">
+            <div>
+              <h2 className="font-black text-lg">
+                {cartao?.billingType === "CREDIT_CARD" ? "Trocar cartão" : "Cadastrar cartão"}
+              </h2>
+              <p className="text-zinc-400 text-sm mt-1">
+                Os dados do cartão são processados com segurança via Asaas.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1.5">Nome impresso no cartão</label>
+                <input
+                  value={cardForm.holderName}
+                  onChange={(e) => setCardForm((p) => ({ ...p, holderName: e.target.value }))}
+                  placeholder="Ex: JOAO S SILVA"
+                  className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-xl px-4 py-3 text-sm placeholder-zinc-600 focus:outline-none focus:border-yellow-500 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1.5">Número do cartão</label>
+                <input
+                  value={cardForm.number}
+                  onChange={(e) => setCardForm((p) => ({ ...p, number: e.target.value }))}
+                  placeholder="0000 0000 0000 0000"
+                  maxLength={19}
+                  className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-xl px-4 py-3 text-sm placeholder-zinc-600 focus:outline-none focus:border-yellow-500 transition-colors font-mono"
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs text-zinc-400 mb-1.5">Mês</label>
+                  <input
+                    value={cardForm.expiryMonth}
+                    onChange={(e) => setCardForm((p) => ({ ...p, expiryMonth: e.target.value }))}
+                    placeholder="MM"
+                    maxLength={2}
+                    className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-xl px-4 py-3 text-sm placeholder-zinc-600 focus:outline-none focus:border-yellow-500 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-zinc-400 mb-1.5">Ano</label>
+                  <input
+                    value={cardForm.expiryYear}
+                    onChange={(e) => setCardForm((p) => ({ ...p, expiryYear: e.target.value }))}
+                    placeholder="AAAA"
+                    maxLength={4}
+                    className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-xl px-4 py-3 text-sm placeholder-zinc-600 focus:outline-none focus:border-yellow-500 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-zinc-400 mb-1.5">CVV</label>
+                  <input
+                    value={cardForm.ccv}
+                    onChange={(e) => setCardForm((p) => ({ ...p, ccv: e.target.value }))}
+                    placeholder="000"
+                    maxLength={4}
+                    type="password"
+                    className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-xl px-4 py-3 text-sm placeholder-zinc-600 focus:outline-none focus:border-yellow-500 transition-colors"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {cardError && (
+              <p className="text-xs text-red-400 bg-red-400/10 px-3 py-2 rounded-lg">{cardError}</p>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowCardModal(false)}
+                disabled={cardLoading}
+                className="flex-1 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm rounded-xl transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleUpdateCard}
+                disabled={cardLoading}
+                className="flex-1 py-2.5 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-50 text-black font-bold text-sm rounded-xl transition-colors"
+              >
+                {cardLoading ? "Salvando..." : "Salvar cartão"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
