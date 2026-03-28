@@ -249,6 +249,18 @@ export default function AulasPersonalPage() {
                     </a>
                   </div>
                 )}
+                {/* Relatar — aparece para todos os status */}
+                {!(aula.status === "paga" || aula.status === "confirmada") && (
+                  <div className="border-t border-zinc-800 px-5 py-3">
+                    <a
+                      href={`/dashboard/relatar?aulaId=${aula.id}&relatadoId=${aula.aluno.id}&nome=${encodeURIComponent(aula.aluno.nome + " " + aula.aluno.sobrenome)}&volta=/dashboard/personal/aulas`}
+                      className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-red-400 transition"
+                    >
+                      <Flag className="w-3 h-3" />
+                      Relatar um problema
+                    </a>
+                  </div>
+                )}
               </div>
             );
           })}

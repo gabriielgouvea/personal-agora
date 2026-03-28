@@ -196,6 +196,14 @@ export default function MinhasAulasPage() {
                     )}
                     </div>
 
+                    <a
+                      href={`/dashboard/relatar?aulaId=${aula.id}&relatadoId=${aula.personal.id}&nome=${encodeURIComponent(aula.personal.nome + " " + aula.personal.sobrenome)}&volta=/dashboard/aluno/aulas`}
+                      className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-red-400 transition"
+                    >
+                      <Flag className="w-3 h-3" />
+                      Relatar um problema
+                    </a>
+
                     {/* Formulário de avaliação inline */}
                     {avaliarAulaId === aula.id && (
                       <div className="bg-zinc-800/50 border border-zinc-700 rounded-xl p-4">
@@ -248,15 +256,19 @@ export default function MinhasAulasPage() {
                       </div>
                     )}
 
-                    {(aula.status === "paga" || aula.status === "confirmada") && (
-                      <a
-                        href={`/dashboard/relatar?aulaId=${aula.id}&relatadoId=${aula.personal.id}&nome=${encodeURIComponent(aula.personal.nome + " " + aula.personal.sobrenome)}&volta=/dashboard/aluno/aulas`}
-                        className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-red-400 transition mt-1"
-                      >
-                        <Flag className="w-3 h-3" />
-                        Relatar um problema
-                      </a>
-                    )}
+
+                  </div>
+                )}
+                {/* Relatar para aulas canceladas/reembolsadas */}
+                {(aula.status === "cancelada" || aula.status === "reembolsada") && (
+                  <div className="border-t border-zinc-800 px-5 py-3">
+                    <a
+                      href={`/dashboard/relatar?aulaId=${aula.id}&relatadoId=${aula.personal.id}&nome=${encodeURIComponent(aula.personal.nome + " " + aula.personal.sobrenome)}&volta=/dashboard/aluno/aulas`}
+                      className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-red-400 transition"
+                    >
+                      <Flag className="w-3 h-3" />
+                      Relatar um problema
+                    </a>
                   </div>
                 )}
               </div>
