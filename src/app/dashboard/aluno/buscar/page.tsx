@@ -79,6 +79,7 @@ export default function BuscarPersonalPage() {
   const [geoLoading, setGeoLoading] = useState(false);
   const [geoError, setGeoError] = useState("");
   const [geoAsked, setGeoAsked] = useState(false);
+  const [showAllProximas, setShowAllProximas] = useState(false);
 
   // Filtros
   const [nome, setNome] = useState("");
@@ -302,8 +303,9 @@ export default function BuscarPersonalPage() {
             )}
           </div>
         ) : academiasProximas.length > 0 ? (
+          <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {academiasProximas.map((a) => (
+            {(showAllProximas ? academiasProximas : academiasProximas.slice(0, 3)).map((a) => (
               <div
                 key={a.id}
                 className="bg-zinc-800 border border-zinc-700 rounded-xl p-3 flex flex-col gap-2"
@@ -329,6 +331,15 @@ export default function BuscarPersonalPage() {
               </div>
             ))}
           </div>
+          {academiasProximas.length > 3 && (
+            <button
+              onClick={() => setShowAllProximas((p) => !p)}
+              className="mt-3 text-xs text-yellow-500 hover:text-yellow-400 transition w-full text-center"
+            >
+              {showAllProximas ? "Ver menos" : `Ver mais (${academiasProximas.length - 3} academias)`}
+            </button>
+          )}
+          </>
         ) : geoAsked ? (
           <p className="text-sm text-zinc-500 py-2">
             Nenhuma academia encontrada por perto (raio de 15 km).
