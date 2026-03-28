@@ -1,11 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, Check, Loader2, ArrowLeft } from "lucide-react";
+import { Camera, Check, Loader2, ArrowLeft, Trash2, AlertTriangle, ShieldAlert } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useUploadThing } from "@/lib/uploadthing";
 
+const MOTIVOS = [
+  "Não estou mais usando a plataforma",
+  "Encontrei outro serviço",
+  "Problemas com a plataforma",
+  "Questões de privacidade",
+  "Problemas com pagamento",
+  "Outro motivo",
+];
+
 export default function PersonalContaPage() {
+  const router = useRouter();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [nome, setNome] = useState("");
   const [sobrenome, setSobrenome] = useState("");
@@ -15,6 +26,18 @@ export default function PersonalContaPage() {
   const [preview, setPreview] = useState<string | null>(null);
   const { startUpload } = useUploadThing("imageUploader");
 
+  // Dados de assinatura para exclusão
+  const [planoFim, setPlanoFim] = useState<string | null>(null);
+  const [planoAtivo, setPlanoAtivo] = useState(false);
+  const [contaExcluirEm, setContaExcluirEm] = useState<string | null>(null);
+
+  // Modal exclusão
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteMotivo, setDeleteMotivo] = useState("");
+  const [deletando, setDeletando] = useState(false);
+  const [deleteErro, setDeleteErro] = useState("");
+  const [deleteAgendado, setDeleteAgendado] = useState<string | null>(null);
+
   useEffect(() => {
     fetch("/api/me")
       .then((r) => (r.ok ? r.json() : null))
@@ -23,6 +46,17 @@ export default function PersonalContaPage() {
         setNome(d.nome || "");
         setSobrenome(d.sobrenome || "");
         setAvatarUrl(d.avatarUrl || null);
+      })
+      .catch(() => {});
+
+    // Buscar dados de assinatura
+    fetch("/api/me/assinatura")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) return;
+        setPlanoAtivo(d.planoAtivo ?? false);
+        setPlanoFim(d.planoFim ?? null);
+        setContaExcluirEm(d.contaExcluirEm ?? null);
       })
       .catch(() => {});
   }, []);
@@ -144,6 +178,167 @@ export default function PersonalContaPage() {
           )}
         </div>
       </div>
+
+      {/* ── Zona de perigo ── */}
+      <div className="mt-8 border border-red-500/20 rounded-2xl p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <ShieldAlert className="w-5 h-5 text-red-500" />
+          <h2 className="text-sm font-bold text-red-500 uppercase tracking-wider">Zona de perigo</h2>
+        </div>
+
+        {contaExcluirEm ? (
+          <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-xl">
+            <p className="text-sm text-red-400 font-semibold mb-1">Exclusão de conta agendada</p>
+            <p className="text-xs text-zinc-400">
+              Sua conta será excluída em <strong className="text-white">{new Date(contaExcluirEm).toLocaleDateString("pt-BR")}</strong>, ao fim do seu período de acesso.
+              Até lá você pode continuar usando a plataforma normalmente.
+            </p>
+          </div>
+        ) : (
+          <>
+            <p className="text-zinc-400 text-sm mb-2">
+              Ao excluir sua conta, sua assinatura será cancelada e todos os seus dados serão removidos permanentemente.
+            </p>
+            {planoAtivo && planoFim && (
+              <div className="mb-4 p-3 bg-yellow-500/5 border border-yellow-500/20 rounded-xl">
+                <p className="text-xs text-yellow-400">
+                  Você tem acesso ativo até <strong>{new Date(planoFim).toLocaleDateString("pt-BR")}</strong>. Se solicitar a exclusão agora, sua conta será excluída nessa data e você poderá usar a plataforma até lá.
+                </p>
+              </div>
+            )}
+            <button
+              onClick={() => { setShowDeleteModal(true); setDeleteErro(""); setDeleteMotivo(""); }}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600/10 hover:bg-red-600/20 border border-red-500/30 text-red-400 text-sm font-semibold rounded-xl transition"
+            >
+              <Trash2 className="w-4 h-4" />
+              Excluir minha conta
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* ── Modal exclusão ── */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            {deleteAgendado ? (
+              /* Estado de sucesso agendado */
+              <div className="text-center py-4">
+                <div className="w-14 h-14 rounded-full bg-yellow-500/10 flex items-center justify-center mx-auto mb-4">
+                  <Check className="w-7 h-7 text-yellow-400" />
+                </div>
+                <h3 className="font-bold text-white text-lg mb-2">Cancelamento solicitado</h3>
+                <p className="text-zinc-400 text-sm mb-4">
+                  Sua conta será excluída em <strong className="text-white">{new Date(deleteAgendado).toLocaleDateString("pt-BR")}</strong>, ao final do seu período de acesso.
+                </p>
+                <p className="text-xs text-zinc-500 mb-6">
+                  Até essa data você pode acessar a plataforma normalmente. Após a exclusão, todos os seus dados serão removidos permanentemente.
+                </p>
+                <button
+                  onClick={() => { setShowDeleteModal(false); setContaExcluirEm(deleteAgendado); }}
+                  className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-semibold rounded-xl transition"
+                >
+                  Entendido
+                </button>
+              </div>
+            ) : (
+              /* Formulário de exclusão */
+              <>
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center shrink-0">
+                    <AlertTriangle className="w-5 h-5 text-red-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white">Excluir conta</h3>
+                    <p className="text-xs text-zinc-500">
+                      {planoAtivo && planoFim
+                        ? `A exclusão será agendada para ${new Date(planoFim).toLocaleDateString("pt-BR")}`
+                        : "Ação permanente e irreversível"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2 mb-5">
+                  {[
+                    "Sua assinatura será cancelada imediatamente",
+                    ...(planoAtivo && planoFim
+                      ? [`Você mantém o acesso até ${new Date(planoFim).toLocaleDateString("pt-BR")}`]
+                      : []),
+                    "Todos os seus dados e perfil serão excluídos",
+                    "Seu histórico de aulas e avaliações será removido",
+                    "Não será possível recuperar a conta",
+                  ].map((aviso, i) => (
+                    <div key={i} className="flex items-start gap-2 p-2.5 bg-red-500/5 border border-red-500/15 rounded-lg">
+                      <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
+                      <p className="text-xs text-zinc-400">{aviso}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mb-5">
+                  <label className="block text-sm font-medium text-zinc-400 mb-2">
+                    Por que você está saindo?
+                  </label>
+                  <select
+                    value={deleteMotivo}
+                    onChange={(e) => setDeleteMotivo(e.target.value)}
+                    className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:border-red-500/50 transition"
+                  >
+                    <option value="">Selecione um motivo</option>
+                    {MOTIVOS.map((m) => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+
+                {deleteErro && (
+                  <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs">
+                    {deleteErro}
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowDeleteModal(false)}
+                    disabled={deletando}
+                    className="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-semibold rounded-xl transition"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!deleteMotivo) { setDeleteErro("Selecione um motivo."); return; }
+                      setDeletando(true);
+                      setDeleteErro("");
+                      try {
+                        const res = await fetch("/api/me/excluir-conta", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ motivo: deleteMotivo }),
+                        });
+                        const data = await res.json();
+                        if (!res.ok) { setDeleteErro(data.error || "Erro ao excluir conta."); return; }
+                        if (data.agendado) {
+                          setDeleteAgendado(data.excluirEm);
+                        } else {
+                          router.replace("/?conta=excluida");
+                        }
+                      } catch {
+                        setDeleteErro("Erro de conexão. Tente novamente.");
+                      } finally {
+                        setDeletando(false);
+                      }
+                    }}
+                    disabled={deletando || !deleteMotivo}
+                    className="flex-1 py-3 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition flex items-center justify-center gap-2"
+                  >
+                    {deletando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    {deletando ? "Processando..." : "Confirmar exclusão"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

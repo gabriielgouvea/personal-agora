@@ -17,6 +17,10 @@ export async function GET() {
     return NextResponse.json(null, { status: 401 });
   }
 
+  if (user.status === "excluido") {
+    return NextResponse.json(null, { status: 401 });
+  }
+
   return NextResponse.json({
     userId: user.id,
     tipo: user.tipo,

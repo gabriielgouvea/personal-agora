@@ -7,6 +7,9 @@ import {
   Check,
   Loader2,
   ArrowLeft,
+  Trash2,
+  AlertTriangle,
+  ShieldAlert,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -46,6 +49,12 @@ export default function MinhaContaPage() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  // Excluir conta
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteMotivo, setDeleteMotivo] = useState("");
+  const [deletando, setDeletando] = useState(false);
+  const [deleteErro, setDeleteErro] = useState("");
 
   const { startUpload } = useUploadThing("imageUploader");
 
@@ -425,6 +434,110 @@ export default function MinhaContaPage() {
           </span>
         )}
       </div>
+
+      {/* ── Zona de perigo ── */}
+      <div className="mt-16 border border-red-500/20 rounded-2xl p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <ShieldAlert className="w-5 h-5 text-red-500" />
+          <h2 className="text-sm font-bold text-red-500 uppercase tracking-wider">Zona de perigo</h2>
+        </div>
+        <p className="text-zinc-400 text-sm mb-5">
+          A exclusão da conta remove permanentemente todos os seus dados da plataforma. Esta ação é <strong className="text-white">irreversível</strong> e não pode ser desfeita.
+        </p>
+        <button
+          onClick={() => { setShowDeleteModal(true); setDeleteErro(""); setDeleteMotivo(""); }}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600/10 hover:bg-red-600/20 border border-red-500/30 text-red-400 text-sm font-semibold rounded-xl transition"
+        >
+          <Trash2 className="w-4 h-4" />
+          Excluir minha conta
+        </button>
+      </div>
+
+      {/* ── Modal excluir conta ── */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 w-full max-w-md">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-400" />
+              </div>
+              <div>
+                <h3 className="font-bold text-white">Excluir conta</h3>
+                <p className="text-xs text-zinc-500">Ação permanente e irreversível</p>
+              </div>
+            </div>
+
+            <div className="space-y-2.5 mb-5">
+              {[
+                "Todos os seus dados pessoais serão apagados",
+                "Seu histórico de aulas será removido",
+                "Não será possível recuperar a conta",
+                "Avaliações feitas por você serão excluídas",
+              ].map((aviso) => (
+                <div key={aviso} className="flex items-start gap-2 p-2.5 bg-red-500/5 border border-red-500/15 rounded-lg">
+                  <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
+                  <p className="text-xs text-zinc-400">{aviso}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mb-5">
+              <label className="block text-sm font-medium text-zinc-400 mb-2">
+                Por que você está saindo?
+              </label>
+              <select
+                value={deleteMotivo}
+                onChange={(e) => setDeleteMotivo(e.target.value)}
+                className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-sm focus:outline-none focus:border-red-500/50 transition"
+              >
+                <option value="">Selecione um motivo</option>
+                <option value="Não estou mais usando a plataforma">Não estou mais usando a plataforma</option>
+                <option value="Encontrei outro serviço">Encontrei outro serviço</option>
+                <option value="Problemas com a plataforma">Problemas com a plataforma</option>
+                <option value="Questões de privacidade">Questões de privacidade</option>
+                <option value="Problemas com pagamento">Problemas com pagamento</option>
+                <option value="Outro motivo">Outro motivo</option>
+              </select>
+            </div>
+
+            {deleteErro && (
+              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs">
+                {deleteErro}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deletando}
+                className="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-semibold rounded-xl transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  if (!deleteMotivo) { setDeleteErro("Selecione um motivo."); return; }
+                  setDeletando(true);
+                  setDeleteErro("");
+                  const res = await fetch("/api/me/excluir-conta", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ motivo: deleteMotivo }),
+                  });
+                  const data = await res.json();
+                  if (!res.ok) { setDeleteErro(data.error || "Erro ao excluir conta."); setDeletando(false); return; }
+                  router.replace("/?conta=excluida");
+                }}
+                disabled={deletando || !deleteMotivo}
+                className="flex-1 py-3 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition flex items-center justify-center gap-2"
+              >
+                {deletando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                {deletando ? "Excluindo..." : "Confirmar exclusão"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -85,9 +85,13 @@ model User {
   resetToken       String?
   resetTokenExpiry DateTime?
 
-  // Cancelamento
+  // Cancelamento de assinatura
   cancelamentoMotivo   String?
   cancelamentoPedidoEm DateTime?
+
+  // Exclusão de conta
+  excluirContaMotivo  String?
+  contaExcluirEm     DateTime?
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

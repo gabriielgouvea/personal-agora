@@ -21,6 +21,7 @@ export async function GET() {
       asaasSubscriptionId: true,
       cancelamentoPedidoEm: true,
       cancelamentoMotivo: true,
+      contaExcluirEm: true,
     },
   });
 
@@ -34,6 +35,7 @@ export async function GET() {
       planoFim: user.planoFim,
       semAsaas: true,
       cancelamentoPedidoEm: user.cancelamentoPedidoEm,
+      contaExcluirEm: user.contaExcluirEm,
     });
   }
 
@@ -56,6 +58,7 @@ export async function GET() {
       value: subscription.value,
       cancelamentoPedidoEm: user.cancelamentoPedidoEm,
       cancelamentoMotivo: user.cancelamentoMotivo,
+      contaExcluirEm: user.contaExcluirEm,
       overdue,
       pending,
     });
@@ -71,6 +74,7 @@ export async function GET() {
       value: null,
       cancelamentoPedidoEm: user.cancelamentoPedidoEm,
       cancelamentoMotivo: user.cancelamentoMotivo,
+      contaExcluirEm: user.contaExcluirEm,
       overdue: [],
       pending: [],
     });

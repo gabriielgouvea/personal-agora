@@ -51,6 +51,14 @@ export async function POST(request: Request) {
       );
     }
 
+    // Bloquear contas excluídas
+    if (user.status === "excluido") {
+      return NextResponse.json(
+        { error: "Esta conta foi excluída e não pode mais ser acessada." },
+        { status: 403 }
+      );
+    }
+
     await createSession({
       userId: user.id,
       tipo: user.tipo,
