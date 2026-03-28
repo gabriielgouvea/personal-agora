@@ -31,14 +31,20 @@ export async function POST(req: NextRequest) {
   const session = await getAdminSession();
   if (!session) return NextResponse.json(null, { status: 401 });
 
-  const { nome, endereco, redeId } = await req.json();
+  const { nome, endereco, redeId, latitude, longitude } = await req.json();
 
   if (!nome || !endereco) {
     return NextResponse.json({ error: "Preencha nome e endereço" }, { status: 400 });
   }
 
   const academia = await prisma.academia.create({
-    data: { nome, endereco, redeId: redeId || null },
+    data: {
+      nome,
+      endereco,
+      redeId: redeId || null,
+      latitude: latitude ?? null,
+      longitude: longitude ?? null,
+    },
     include: { rede: { select: { id: true, nome: true } } },
   });
 

@@ -169,6 +169,8 @@ model Academia {
   id        String   @id @default(uuid())
   nome      String
   endereco  String
+  latitude  Float?
+  longitude Float?
   redeId    String?
   rede      Rede?    @relation(fields: [redeId], references: [id])
   createdAt DateTime @default(now())

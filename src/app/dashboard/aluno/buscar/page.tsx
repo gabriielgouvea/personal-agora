@@ -10,6 +10,8 @@ import {
   X,
   ShoppingBag,
   Star,
+  Navigation,
+  Loader2,
 } from "lucide-react";
 
 const MODALIDADES = [
@@ -43,6 +45,13 @@ interface Personal {
   rating: { media: number; total: number };
 }
 
+interface AcademiaProxima {
+  id: string;
+  nome: string;
+  endereco: string;
+  distanciaKm: number;
+}
+
 function parseJson(val: string | null): string[] {
   if (!val) return [];
   try {
@@ -64,6 +73,12 @@ function whatsappLink(phone: string, nome: string) {
 export default function BuscarPersonalPage() {
   const [personais, setPersonais] = useState<Personal[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Academias por perto
+  const [academiasProximas, setAcademiasProximas] = useState<AcademiaProxima[]>([]);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState("");
+  const [geoAsked, setGeoAsked] = useState(false);
 
   // Filtros
   const [nome, setNome] = useState("");
@@ -97,6 +112,47 @@ export default function BuscarPersonalPage() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  // Pedir localização automaticamente ao carregar
+  useEffect(() => {
+    buscarAcademiasProximas();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function buscarAcademiasProximas() {
+    if (!navigator.geolocation) {
+      setGeoError("Seu navegador não suporta geolocalização");
+      setGeoAsked(true);
+      return;
+    }
+    setGeoLoading(true);
+    setGeoError("");
+    setGeoAsked(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude, longitude } = pos.coords;
+          const res = await fetch(`/api/academias/proximas?lat=${latitude}&lng=${longitude}&raio=15`);
+          const data: AcademiaProxima[] = await res.json();
+          setAcademiasProximas(data);
+        } catch {
+          setGeoError("Erro ao buscar academias próximas");
+        } finally {
+          setGeoLoading(false);
+        }
+      },
+      () => {
+        setGeoError("Localização não permitida");
+        setGeoLoading(false);
+      },
+      { enableHighAccuracy: false, timeout: 10000 }
+    );
+  }
+
+  function buscarPersonaisDaAcademia(nomeAcademia: string) {
+    setAcademiasSel([nomeAcademia]);
+    setAcademiaInput("");
+  }
 
   // Buscar personais sempre que filtros mudam
   useEffect(() => {
@@ -210,6 +266,74 @@ export default function BuscarPersonalPage() {
         <p className="text-zinc-500 text-sm mt-1">
           Filtre por modalidade, região ou academia e entre em contato direto.
         </p>
+      </div>
+
+      {/* Academias por perto */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+            <Navigation className="w-3.5 h-3.5 text-yellow-500" /> Academias por perto
+          </p>
+          {geoAsked && !geoLoading && (
+            <button
+              onClick={buscarAcademiasProximas}
+              className="text-xs text-yellow-500 hover:text-yellow-400 transition"
+            >
+              Atualizar localização
+            </button>
+          )}
+        </div>
+
+        {geoLoading ? (
+          <div className="flex items-center gap-2 text-sm text-zinc-400 py-3">
+            <Loader2 className="w-4 h-4 animate-spin text-yellow-500" />
+            Buscando academias próximas...
+          </div>
+        ) : geoError ? (
+          <div className="text-sm text-zinc-500 py-2">
+            <p>{geoError}</p>
+            {geoError === "Localização não permitida" && (
+              <button
+                onClick={buscarAcademiasProximas}
+                className="mt-2 text-xs text-yellow-500 hover:text-yellow-400 underline"
+              >
+                Tentar novamente
+              </button>
+            )}
+          </div>
+        ) : academiasProximas.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {academiasProximas.map((a) => (
+              <div
+                key={a.id}
+                className="bg-zinc-800 border border-zinc-700 rounded-xl p-3 flex flex-col gap-2"
+              >
+                <div className="flex items-start gap-2">
+                  <Building2 className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-white truncate">{a.nome}</p>
+                    <p className="text-xs text-zinc-500 truncate">{a.endereco}</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between mt-auto">
+                  <span className="text-xs text-zinc-500 flex items-center gap-1">
+                    <MapPin className="w-3 h-3" /> {a.distanciaKm} km
+                  </span>
+                  <button
+                    onClick={() => buscarPersonaisDaAcademia(a.nome)}
+                    className="text-xs font-bold text-black bg-yellow-500 hover:bg-yellow-400 px-3 py-1.5 rounded-lg transition"
+                  >
+                    Ver personais
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : geoAsked ? (
+          <p className="text-sm text-zinc-500 py-2">
+            Nenhuma academia encontrada por perto (raio de 15 km).
+          </p>
+        ) : null}
       </div>
 
       {/* Barra de busca */}

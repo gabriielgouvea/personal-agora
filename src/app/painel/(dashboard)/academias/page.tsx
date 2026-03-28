@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Search, Plus, Pencil, Trash2, X, Building2, Network } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Search, Plus, Pencil, Trash2, X, Building2, Network, MapPin } from "lucide-react";
 
 interface Rede {
   id: string;
@@ -13,9 +13,17 @@ interface Academia {
   id: string;
   nome: string;
   endereco: string;
+  latitude: number | null;
+  longitude: number | null;
   redeId: string | null;
   rede: { id: string; nome: string } | null;
   createdAt: string;
+}
+
+interface EnderecoSuggestion {
+  description: string;
+  latitude: number;
+  longitude: number;
 }
 
 export default function AcademiasPage() {
@@ -39,6 +47,12 @@ export default function AcademiasPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [nome, setNome] = useState("");
   const [endereco, setEndereco] = useState("");
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [enderecoSuggestions, setEnderecoSuggestions] = useState<EnderecoSuggestion[]>([]);
+  const [enderecoOpen, setEnderecoOpen] = useState(false);
+  const enderecoTimer = useRef<NodeJS.Timeout | null>(null);
+  const enderecoRef = useRef<HTMLDivElement>(null);
   const [redeId, setRedeId] = useState("");
   const [saving, setSaving] = useState(false);
   const [erro, setErro] = useState("");
@@ -71,6 +85,48 @@ export default function AcademiasPage() {
     fetchAcademias();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [busca, filtroRede]);
+
+  // Fechar dropdown endereço ao clicar fora
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (enderecoRef.current && !enderecoRef.current.contains(e.target as Node)) {
+        setEnderecoOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // Buscar sugestões de endereço (Photon) com debounce
+  function handleEnderecoChange(value: string) {
+    setEndereco(value);
+    setLatitude(null);
+    setLongitude(null);
+    if (enderecoTimer.current) clearTimeout(enderecoTimer.current);
+    if (value.length < 3) {
+      setEnderecoSuggestions([]);
+      setEnderecoOpen(false);
+      return;
+    }
+    enderecoTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/places/endereco?input=${encodeURIComponent(value)}`);
+        const data: EnderecoSuggestion[] = await res.json();
+        setEnderecoSuggestions(data);
+        setEnderecoOpen(data.length > 0);
+      } catch {
+        setEnderecoSuggestions([]);
+      }
+    }, 400);
+  }
+
+  function selectEndereco(s: EnderecoSuggestion) {
+    setEndereco(s.description);
+    setLatitude(s.latitude);
+    setLongitude(s.longitude);
+    setEnderecoOpen(false);
+    setEnderecoSuggestions([]);
+  }
 
   // === REDE ACTIONS ===
   function openNewRede() {
@@ -127,8 +183,12 @@ export default function AcademiasPage() {
     setEditingId(null);
     setNome("");
     setEndereco("");
+    setLatitude(null);
+    setLongitude(null);
     setRedeId("");
     setErro("");
+    setEnderecoSuggestions([]);
+    setEnderecoOpen(false);
     setShowForm(true);
   }
 
@@ -136,8 +196,12 @@ export default function AcademiasPage() {
     setEditingId(a.id);
     setNome(a.nome);
     setEndereco(a.endereco);
+    setLatitude(a.latitude);
+    setLongitude(a.longitude);
     setRedeId(a.redeId || "");
     setErro("");
+    setEnderecoSuggestions([]);
+    setEnderecoOpen(false);
     setShowForm(true);
   }
 
@@ -152,7 +216,7 @@ export default function AcademiasPage() {
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nome, endereco, redeId: redeId || null }),
+      body: JSON.stringify({ nome, endereco, redeId: redeId || null, latitude, longitude }),
     });
 
     if (!res.ok) {
@@ -371,11 +435,35 @@ export default function AcademiasPage() {
                   className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-yellow-500 transition"
                   placeholder="Ex: Smart Fit Alphaville" />
               </div>
-              <div>
+              <div ref={enderecoRef}>
                 <label className="text-xs text-zinc-500 uppercase">Endereço</label>
-                <input required value={endereco} onChange={(e) => setEndereco(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-yellow-500 transition"
-                  placeholder="Ex: Av. Alphaville, 1000 - Barueri" />
+                <div className="relative">
+                  <input required value={endereco} onChange={(e) => handleEnderecoChange(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-yellow-500 transition"
+                    placeholder="Digite o endereço e selecione..." />
+                  {enderecoOpen && enderecoSuggestions.length > 0 && (
+                    <div className="absolute z-30 left-0 right-0 mt-1 bg-zinc-800 border border-zinc-700 rounded-lg max-h-48 overflow-y-auto shadow-xl">
+                      {enderecoSuggestions.map((s, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => selectEndereco(s)}
+                          className="w-full text-left px-3 py-2.5 text-sm hover:bg-zinc-700 transition flex items-center gap-2"
+                        >
+                          <MapPin size={14} className="text-yellow-500 shrink-0" />
+                          <span>{s.description}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {latitude && longitude ? (
+                  <p className="text-xs text-green-400 mt-1 flex items-center gap-1">
+                    <MapPin size={12} /> Localização capturada
+                  </p>
+                ) : endereco.length >= 3 ? (
+                  <p className="text-xs text-yellow-500 mt-1">Selecione um endereço da lista para capturar a localização</p>
+                ) : null}
               </div>
               <div>
                 <label className="text-xs text-zinc-500 uppercase">Rede (opcional)</label>
