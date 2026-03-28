@@ -19,6 +19,8 @@ import {
   Clock,
   Ticket,
   Star,
+  ExternalLink,
+  ScanFace,
 } from "lucide-react";
 
 interface Personal {
@@ -30,6 +32,7 @@ interface Personal {
   valorAproximado: string | null;
   disponivelEmCasa: boolean;
   regioes: string | null;
+  cref: string | null;
 }
 
 function parseJson(str: string | null): string[] {
@@ -418,6 +421,55 @@ export default function ContratarPage() {
                   <span className="text-xs text-zinc-500">({avaliacoes.total})</span>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Identidade e CREF verificados */}
+        {personal && !pixData && !cardResult && (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+            <h3 className="font-bold text-sm uppercase tracking-wider text-zinc-400 mb-4">
+              Verificação de identidade
+            </h3>
+            <div className="flex flex-col gap-3">
+              {/* CREF */}
+              {personal.cref && (
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
+                    <BadgeCheck className="w-4 h-4 text-green-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-white">
+                      CREF: <span className="text-yellow-400 font-mono">{personal.cref}</span>
+                    </p>
+                    <p className="text-xs text-zinc-500 mt-0.5">
+                      Registro ativo conferido pela nossa equipe.
+                    </p>
+                    <a
+                      href={`https://www.confef.org.br/confefv2/registrados/`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 mt-1.5 text-xs text-blue-400 hover:text-blue-300 transition underline underline-offset-2"
+                    >
+                      Validar no site oficial do CONFEF
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              )}
+              {/* Identidade */}
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center shrink-0">
+                  <ScanFace className="w-4 h-4 text-purple-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-white">Identidade validada pela plataforma</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">
+                    Foto do documento e reconhecimento facial verificados
+                    pela equipe <span className="text-yellow-500 font-semibold">Personal Agora</span>.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         )}

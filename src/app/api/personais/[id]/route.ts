@@ -30,6 +30,7 @@ export async function GET(
       asaasCustomerId: true,
       email: true,
       cpf: true,
+      cref: true,
     },
   });
 
