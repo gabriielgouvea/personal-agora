@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MessageCircle, CheckCircle2, Clock, XCircle, RefreshCw, CalendarDays, BadgeDollarSign, User } from "lucide-react";
+import { MessageCircle, CheckCircle2, Clock, XCircle, RefreshCw, CalendarDays, BadgeDollarSign, User, Star, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 interface Aula {
@@ -10,6 +10,7 @@ interface Aula {
   status: string;
   confirmedAt: string | null;
   createdAt: string;
+  jaAvaliou: boolean;
   aluno: {
     id: string;
     nome: string;
@@ -32,6 +33,11 @@ const STATUS_LABELS: Record<string, { label: string; color: string; icon: React.
 export default function AulasPersonalPage() {
   const [aulas, setAulas] = useState<Aula[]>([]);
   const [loading, setLoading] = useState(true);
+  const [avaliarAulaId, setAvaliarAulaId] = useState<string | null>(null);
+  const [nota, setNota] = useState(0);
+  const [hoverNota, setHoverNota] = useState(0);
+  const [comentario, setComentario] = useState("");
+  const [enviandoAvaliacao, setEnviandoAvaliacao] = useState(false);
 
   useEffect(() => {
     fetch("/api/aulas")
@@ -39,6 +45,23 @@ export default function AulasPersonalPage() {
       .then(setAulas)
       .finally(() => setLoading(false));
   }, []);
+
+  async function enviarAvaliacao() {
+    if (!avaliarAulaId || nota === 0) return;
+    setEnviandoAvaliacao(true);
+    const res = await fetch("/api/avaliacoes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ aulaId: avaliarAulaId, nota, comentario: comentario.trim() || undefined }),
+    });
+    if (res.ok) {
+      setAulas((prev) => prev.map((a) => (a.id === avaliarAulaId ? { ...a, jaAvaliou: true } : a)));
+      setAvaliarAulaId(null);
+      setNota(0);
+      setComentario("");
+    }
+    setEnviandoAvaliacao(false);
+  }
 
   const totalPago = aulas
     .filter((a) => a.status === "paga" || a.status === "confirmada")
@@ -135,7 +158,8 @@ export default function AulasPersonalPage() {
 
                 {/* Ações visíveis após pagamento */}
                 {(aula.status === "paga" || aula.status === "confirmada") && (
-                  <div className="border-t border-zinc-800 px-5 py-4 flex flex-wrap gap-3">
+                  <div className="border-t border-zinc-800 px-5 py-4 flex flex-col gap-3">
+                    <div className="flex flex-wrap gap-3">
                     <Link
                       href={`/dashboard/personal/aluno/${aula.aluno.id}`}
                       className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white text-sm font-semibold rounded-xl transition"
@@ -153,6 +177,67 @@ export default function AulasPersonalPage() {
                         <MessageCircle className="w-4 h-4" />
                         WhatsApp do aluno
                       </a>
+                    )}
+                    {aula.status === "confirmada" && !aula.jaAvaliou && avaliarAulaId !== aula.id && (
+                      <button
+                        onClick={() => { setAvaliarAulaId(aula.id); setNota(0); setComentario(""); }}
+                        className="px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black text-sm font-bold rounded-xl transition flex items-center gap-2"
+                      >
+                        <Star className="w-4 h-4" />
+                        Avaliar aluno
+                      </button>
+                    )}
+                    {aula.status === "confirmada" && aula.jaAvaliou && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-semibold">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Avaliado
+                      </span>
+                    )}
+                    </div>
+
+                    {/* Formulário de avaliação inline */}
+                    {avaliarAulaId === aula.id && (
+                      <div className="bg-zinc-800/50 border border-zinc-700 rounded-xl p-4">
+                        <p className="text-sm font-semibold mb-3">Como foi sua aula com {aula.aluno.nome}?</p>
+                        <div className="flex gap-1 mb-3">
+                          {[1, 2, 3, 4, 5].map((n) => (
+                            <button
+                              key={n}
+                              onMouseEnter={() => setHoverNota(n)}
+                              onMouseLeave={() => setHoverNota(0)}
+                              onClick={() => setNota(n)}
+                              className="p-0.5 transition-transform hover:scale-110"
+                            >
+                              <Star
+                                className={`w-7 h-7 ${(hoverNota || nota) >= n ? "text-yellow-400 fill-yellow-400" : "text-zinc-600"}`}
+                              />
+                            </button>
+                          ))}
+                        </div>
+                        <textarea
+                          value={comentario}
+                          onChange={(e) => setComentario(e.target.value)}
+                          placeholder="Deixe um comentário (opcional)"
+                          rows={2}
+                          className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm placeholder:text-zinc-600 focus:outline-none focus:border-yellow-500/50 resize-none mb-3"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={enviarAvaliacao}
+                            disabled={nota === 0 || enviandoAvaliacao}
+                            className="px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black text-sm font-bold rounded-xl transition disabled:opacity-50 flex items-center gap-2"
+                          >
+                            {enviandoAvaliacao && <Loader2 className="w-4 h-4 animate-spin" />}
+                            Enviar avaliação
+                          </button>
+                          <button
+                            onClick={() => setAvaliarAulaId(null)}
+                            className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white text-sm font-semibold rounded-xl transition"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}

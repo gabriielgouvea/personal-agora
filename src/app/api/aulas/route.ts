@@ -155,9 +155,17 @@ export async function GET(_req: NextRequest) {
         aluno: {
           select: { id: true, nome: true, sobrenome: true, avatarUrl: true, telefone: true, isWhatsapp: true, email: true },
         },
+        avaliacoes: {
+          where: { autorId: session.userId },
+          select: { id: true },
+        },
       },
     });
-    return NextResponse.json(aulas);
+    const result = aulas.map(({ avaliacoes, ...a }) => ({
+      ...a,
+      jaAvaliou: avaliacoes.length > 0,
+    }));
+    return NextResponse.json(result);
   }
 
   // Retorna aulas como aluno
@@ -168,7 +176,15 @@ export async function GET(_req: NextRequest) {
       personal: {
         select: { id: true, nome: true, sobrenome: true, avatarUrl: true, telefone: true, isWhatsapp: true, email: true },
       },
+      avaliacoes: {
+        where: { autorId: session.userId },
+        select: { id: true },
+      },
     },
   });
-  return NextResponse.json(aulas);
+  const result = aulas.map(({ avaliacoes, ...a }) => ({
+    ...a,
+    jaAvaliou: avaliacoes.length > 0,
+  }));
+  return NextResponse.json(result);
 }

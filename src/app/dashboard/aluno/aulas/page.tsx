@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MessageCircle, CheckCircle2, Clock, XCircle, RefreshCw, Loader2, CalendarDays, AlertCircle } from "lucide-react";
+import { MessageCircle, CheckCircle2, Clock, XCircle, RefreshCw, Loader2, CalendarDays, AlertCircle, Star } from "lucide-react";
 
 interface Aula {
   id: string;
@@ -10,6 +10,7 @@ interface Aula {
   paymentUrl: string | null;
   confirmedAt: string | null;
   createdAt: string;
+  jaAvaliou: boolean;
   personal: {
     id: string;
     nome: string;
@@ -33,6 +34,11 @@ export default function MinhasAulasPage() {
   const [aulas, setAulas] = useState<Aula[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirming, setConfirming] = useState<string | null>(null);
+  const [avaliarAulaId, setAvaliarAulaId] = useState<string | null>(null);
+  const [nota, setNota] = useState(0);
+  const [hoverNota, setHoverNota] = useState(0);
+  const [comentario, setComentario] = useState("");
+  const [enviandoAvaliacao, setEnviandoAvaliacao] = useState(false);
 
   async function fetchAulas() {
     const res = await fetch("/api/aulas");
@@ -52,6 +58,23 @@ export default function MinhasAulasPage() {
       );
     }
     setConfirming(null);
+  }
+
+  async function enviarAvaliacao() {
+    if (!avaliarAulaId || nota === 0) return;
+    setEnviandoAvaliacao(true);
+    const res = await fetch("/api/avaliacoes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ aulaId: avaliarAulaId, nota, comentario: comentario.trim() || undefined }),
+    });
+    if (res.ok) {
+      setAulas((prev) => prev.map((a) => (a.id === avaliarAulaId ? { ...a, jaAvaliou: true } : a)));
+      setAvaliarAulaId(null);
+      setNota(0);
+      setComentario("");
+    }
+    setEnviandoAvaliacao(false);
   }
 
   if (loading) {
@@ -119,7 +142,8 @@ export default function MinhasAulasPage() {
 
                 {/* Actions */}
                 {(aula.status === "aguardando_pagamento" || aula.status === "paga" || aula.status === "confirmada") && (
-                  <div className="border-t border-zinc-800 px-5 py-4 flex flex-wrap gap-3">
+                  <div className="border-t border-zinc-800 px-5 py-4 flex flex-col gap-3">
+                    <div className="flex flex-wrap gap-3">
                     {aula.status === "aguardando_pagamento" && aula.paymentUrl && (
                       <a
                         href={aula.paymentUrl}
@@ -155,8 +179,70 @@ export default function MinhasAulasPage() {
                         WhatsApp do personal
                       </a>
                     )}
+                    {aula.status === "confirmada" && !aula.jaAvaliou && avaliarAulaId !== aula.id && (
+                      <button
+                        onClick={() => { setAvaliarAulaId(aula.id); setNota(0); setComentario(""); }}
+                        className="px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black text-sm font-bold rounded-xl transition flex items-center gap-2"
+                      >
+                        <Star className="w-4 h-4" />
+                        Avaliar personal
+                      </button>
+                    )}
+                    {aula.status === "confirmada" && aula.jaAvaliou && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-semibold">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Avaliado
+                      </span>
+                    )}
+                    </div>
+
+                    {/* Formulário de avaliação inline */}
+                    {avaliarAulaId === aula.id && (
+                      <div className="bg-zinc-800/50 border border-zinc-700 rounded-xl p-4">
+                        <p className="text-sm font-semibold mb-3">Como foi sua aula com {aula.personal.nome}?</p>
+                        <div className="flex gap-1 mb-3">
+                          {[1, 2, 3, 4, 5].map((n) => (
+                            <button
+                              key={n}
+                              onMouseEnter={() => setHoverNota(n)}
+                              onMouseLeave={() => setHoverNota(0)}
+                              onClick={() => setNota(n)}
+                              className="p-0.5 transition-transform hover:scale-110"
+                            >
+                              <Star
+                                className={`w-7 h-7 ${(hoverNota || nota) >= n ? "text-yellow-400 fill-yellow-400" : "text-zinc-600"}`}
+                              />
+                            </button>
+                          ))}
+                        </div>
+                        <textarea
+                          value={comentario}
+                          onChange={(e) => setComentario(e.target.value)}
+                          placeholder="Deixe um comentário (opcional)"
+                          rows={2}
+                          className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm placeholder:text-zinc-600 focus:outline-none focus:border-yellow-500/50 resize-none mb-3"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={enviarAvaliacao}
+                            disabled={nota === 0 || enviandoAvaliacao}
+                            className="px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black text-sm font-bold rounded-xl transition disabled:opacity-50 flex items-center gap-2"
+                          >
+                            {enviandoAvaliacao && <Loader2 className="w-4 h-4 animate-spin" />}
+                            Enviar avaliação
+                          </button>
+                          <button
+                            onClick={() => setAvaliarAulaId(null)}
+                            className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white text-sm font-semibold rounded-xl transition"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     {aula.status === "paga" && (
-                      <div className="w-full flex items-start gap-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-300 text-xs">
+                      <div className="flex items-start gap-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-300 text-xs">
                         <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                         Clique em "Aula realizada" após a aula ocorrer para liberar o pagamento ao personal. Em caso de não comparecimento, entre em contato com o suporte.
                       </div>

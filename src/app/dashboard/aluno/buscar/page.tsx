@@ -9,6 +9,7 @@ import {
   Home,
   X,
   ShoppingBag,
+  Star,
 } from "lucide-react";
 
 const MODALIDADES = [
@@ -39,6 +40,7 @@ interface Personal {
   telefone: string | null;
   isWhatsapp: boolean;
   asaasCustomerId: string | null;
+  rating: { media: number; total: number };
 }
 
 function parseJson(val: string | null): string[] {
@@ -435,6 +437,15 @@ function PersonalCard({ personal: p }: { personal: Personal }) {
         <h3 className="font-bold text-white text-base leading-tight">
           {p.nome}
         </h3>
+
+        {/* Avaliação */}
+        {p.rating.total > 0 && (
+          <div className="flex items-center gap-1.5">
+            <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
+            <span className="text-sm font-semibold text-yellow-400">{p.rating.media.toFixed(1)}</span>
+            <span className="text-xs text-zinc-500">({p.rating.total})</span>
+          </div>
+        )}
 
         {/* Modalidades */}
         {modalidades.length > 0 && (

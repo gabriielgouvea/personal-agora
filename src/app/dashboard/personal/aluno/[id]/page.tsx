@@ -16,6 +16,7 @@ import {
   MessageCircle,
   CalendarDays,
   Shield,
+  Star,
 } from "lucide-react";
 
 interface AulaHistorico {
@@ -107,6 +108,11 @@ export default function PerfilAlunoPage() {
   const [aluno, setAluno] = useState<AlunoProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [avaliacoes, setAvaliacoes] = useState<{
+    avaliacoes: { id: string; nota: number; comentario: string | null; createdAt: string; autor: { nome: string; avatarUrl: string | null } }[];
+    media: number;
+    total: number;
+  }>({ avaliacoes: [], media: 0, total: 0 });
 
   useEffect(() => {
     fetch(`/api/alunos/${id}`)
@@ -117,6 +123,11 @@ export default function PerfilAlunoPage() {
       .then(setAluno)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
+    // Busca avaliações do aluno (visível para personais)
+    fetch(`/api/avaliacoes/aluno/${id}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { if (data) setAvaliacoes(data); })
+      .catch(() => {});
   }, [id]);
 
   if (loading) {
@@ -297,6 +308,55 @@ export default function PerfilAlunoPage() {
           )}
         </div>
       </section>
+
+      {/* Avaliações de personais sobre este aluno */}
+      {avaliacoes.total > 0 && (
+        <section className="mb-8">
+          <h2 className="text-sm font-bold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <Star className="w-4 h-4 text-yellow-500" /> Avaliações de Personais ({avaliacoes.total})
+          </h2>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+            <div className="flex items-center gap-3 mb-4 pb-3 border-b border-zinc-800">
+              <span className="text-2xl font-black text-yellow-400">{avaliacoes.media.toFixed(1)}</span>
+              <div className="flex gap-0.5">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Star
+                    key={n}
+                    className={`w-4 h-4 ${avaliacoes.media >= n ? "text-yellow-400 fill-yellow-400" : "text-zinc-700"}`}
+                  />
+                ))}
+              </div>
+              <span className="text-xs text-zinc-500">{avaliacoes.total} avaliação{avaliacoes.total !== 1 ? "ões" : ""}</span>
+            </div>
+            <div className="space-y-3">
+              {avaliacoes.avaliacoes.map((av) => (
+                <div key={av.id} className="flex gap-3">
+                  <div className="w-7 h-7 rounded-full bg-zinc-800 flex items-center justify-center shrink-0 overflow-hidden">
+                    {av.autor.avatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={av.autor.avatarUrl} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-xs font-bold text-yellow-500">{av.autor.nome[0]}</span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="text-sm font-semibold">{av.autor.nome}</span>
+                      <div className="flex gap-0.5">
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <Star key={n} className={`w-3 h-3 ${av.nota >= n ? "text-yellow-400 fill-yellow-400" : "text-zinc-700"}`} />
+                        ))}
+                      </div>
+                      <span className="text-xs text-zinc-600">{new Date(av.createdAt).toLocaleDateString("pt-BR")}</span>
+                    </div>
+                    {av.comentario && <p className="text-sm text-zinc-400">{av.comentario}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Histórico de aulas entre ambos */}
       <section>

@@ -59,5 +59,24 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  return NextResponse.json(trainers);
+  // Buscar médias de avaliação dos personais retornados
+  const ids = trainers.map((t) => t.id);
+  const ratings = await prisma.avaliacao.groupBy({
+    by: ["avaliadoId"],
+    where: {
+      avaliadoId: { in: ids },
+      tipo: "aluno_para_personal",
+      visivelNoPerfil: true,
+    },
+    _avg: { nota: true },
+    _count: { nota: true },
+  });
+  const ratingMap = new Map(ratings.map((r) => [r.avaliadoId, { media: r._avg.nota ?? 0, total: r._count.nota }]));
+
+  const result = trainers.map((t) => ({
+    ...t,
+    rating: ratingMap.get(t.id) ?? { media: 0, total: 0 },
+  }));
+
+  return NextResponse.json(result);
 }

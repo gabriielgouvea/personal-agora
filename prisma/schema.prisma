@@ -94,6 +94,8 @@ model User {
 
   aulaComoAluno    Aula[]  @relation("AlunoAulas")
   aulaComoPersonal Aula[]  @relation("PersonalAulas")
+  avaliacoesFeitas    Avaliacao[] @relation("AutorAvaliacoes")
+  avaliacoesRecebidas Avaliacao[] @relation("AvaliadoAvaliacoes")
 }
 
 model Aula {
@@ -115,6 +117,24 @@ model Aula {
   releasedAt      DateTime?  // pagamento liberado ao personal
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  avaliacoes      Avaliacao[]
+}
+
+model Avaliacao {
+  id              String   @id @default(uuid())
+  aulaId          String
+  aula            Aula     @relation(fields: [aulaId], references: [id])
+  autorId         String
+  autor           User     @relation("AutorAvaliacoes", fields: [autorId], references: [id])
+  avaliadoId      String
+  avaliado        User     @relation("AvaliadoAvaliacoes", fields: [avaliadoId], references: [id])
+  nota            Int      // 1 a 5
+  comentario      String?
+  tipo            String   // "aluno_para_personal" | "personal_para_aluno"
+  visivelNoPerfil Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  @@unique([aulaId, autorId])
 }
 
 model Admin {
