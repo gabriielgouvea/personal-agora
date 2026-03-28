@@ -89,6 +89,7 @@ export async function POST(req: NextRequest) {
       personalId: personal.id,
       valor,
       status: "aguardando_pagamento",
+      formaPagamento: billingType === "CREDIT_CARD" ? "CREDIT_CARD" : billingType === "PIX" ? "PIX" : billingType === "BOLETO" ? "BOLETO" : null,
     },
   });
 

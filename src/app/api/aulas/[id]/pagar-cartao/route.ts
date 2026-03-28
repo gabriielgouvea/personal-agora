@@ -98,7 +98,9 @@ export async function POST(
       data: {
         asaasChargeId: charge.id,
         paymentUrl: charge.invoiceUrl,
+        formaPagamento: "CREDIT_CARD",
         status: isPaid ? "paga" : "aguardando_pagamento",
+        ...(isPaid ? { paidAt: new Date() } : {}),
       },
     });
 

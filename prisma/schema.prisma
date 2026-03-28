@@ -105,6 +105,8 @@ model Aula {
   valor           Float
   // "aguardando_pagamento" | "paga" | "confirmada" | "cancelada" | "reembolsada"
   status          String   @default("aguardando_pagamento")
+  formaPagamento  String?  // "PIX" | "CREDIT_CARD" | "BOLETO"
+  paidAt          DateTime? // data/hora do pagamento confirmado
   asaasChargeId   String?
   asaasSubscriptionId String?  // assinatura recorrente Asaas
   paymentUrl      String?

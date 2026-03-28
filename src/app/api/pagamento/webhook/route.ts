@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
         if (aula && aula.status === "aguardando_pagamento") {
           await prisma.aula.update({
             where: { id: aula.id },
-            data: { status: "paga" },
+            data: { status: "paga", paidAt: new Date() },
           });
 
           // Enviar emails paralelamente (erros silenciosos para não rejeitar o webhook)

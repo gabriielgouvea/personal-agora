@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MessageCircle, CheckCircle2, Clock, XCircle, RefreshCw, CalendarDays, BadgeDollarSign } from "lucide-react";
+import { MessageCircle, CheckCircle2, Clock, XCircle, RefreshCw, CalendarDays, BadgeDollarSign, User } from "lucide-react";
+import Link from "next/link";
 
 interface Aula {
   id: string;
@@ -132,18 +133,27 @@ export default function AulasPersonalPage() {
                   </div>
                 </div>
 
-                {/* WhatsApp visível após pagamento */}
-                {(aula.status === "paga" || aula.status === "confirmada") && whatsappUrl && (
-                  <div className="border-t border-zinc-800 px-5 py-4">
-                    <a
-                      href={whatsappUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-600 text-white text-sm font-semibold rounded-xl transition"
+                {/* Ações visíveis após pagamento */}
+                {(aula.status === "paga" || aula.status === "confirmada") && (
+                  <div className="border-t border-zinc-800 px-5 py-4 flex flex-wrap gap-3">
+                    <Link
+                      href={`/dashboard/personal/aluno/${aula.aluno.id}`}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white text-sm font-semibold rounded-xl transition"
                     >
-                      <MessageCircle className="w-4 h-4" />
-                      WhatsApp do aluno
-                    </a>
+                      <User className="w-4 h-4" />
+                      Ver perfil
+                    </Link>
+                    {whatsappUrl && (
+                      <a
+                        href={whatsappUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-600 text-white text-sm font-semibold rounded-xl transition"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        WhatsApp do aluno
+                      </a>
+                    )}
                   </div>
                 )}
               </div>

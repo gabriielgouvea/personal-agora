@@ -16,6 +16,7 @@ const NAV_ITEMS = [
   { label: "Início", href: "/dashboard/aluno" },
   { label: "Buscar Personal", href: "/dashboard/aluno/buscar" },
   { label: "Minhas Aulas", href: "/dashboard/aluno/aulas" },
+  { label: "Pagamentos", href: "/dashboard/aluno/pagamentos" },
 ];
 
 interface UserSession {
