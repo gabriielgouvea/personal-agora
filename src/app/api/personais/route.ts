@@ -9,6 +9,7 @@ export async function GET(req: NextRequest) {
   const academia = searchParams.get("academia") || "";
   const nome = searchParams.get("nome") || "";
   const casa = searchParams.get("casa") === "1";
+  const sexo = searchParams.get("sexo") || "";
 
   const where: Prisma.UserWhereInput = {
     tipo: { in: ["personal", "ambos"] },
@@ -27,6 +28,9 @@ export async function GET(req: NextRequest) {
   if (casa) {
     where.disponivelEmCasa = true;
   }
+  if (sexo) {
+    where.sexo = sexo;
+  }
 
   let trainers = await prisma.user.findMany({
     where,
@@ -34,6 +38,7 @@ export async function GET(req: NextRequest) {
       id: true,
       nome: true,
       sobrenome: true,
+      sexo: true,
       avatarUrl: true,
       modalidades: true,
       regioes: true,
