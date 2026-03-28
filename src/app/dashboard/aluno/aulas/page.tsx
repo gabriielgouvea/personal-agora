@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MessageCircle, CheckCircle2, Clock, XCircle, RefreshCw, Loader2, CalendarDays, AlertCircle, Star } from "lucide-react";
+import { MessageCircle, CheckCircle2, Clock, XCircle, RefreshCw, Loader2, CalendarDays, AlertCircle, Star, Flag } from "lucide-react";
 
 interface Aula {
   id: string;
@@ -246,6 +246,16 @@ export default function MinhasAulasPage() {
                         <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                         Clique em "Aula realizada" após a aula ocorrer para liberar o pagamento ao personal. Em caso de não comparecimento, entre em contato com o suporte.
                       </div>
+                    )}
+
+                    {(aula.status === "paga" || aula.status === "confirmada") && (
+                      <a
+                        href={`/dashboard/relatar?aulaId=${aula.id}&relatadoId=${aula.personal.id}&nome=${encodeURIComponent(aula.personal.nome + " " + aula.personal.sobrenome)}&volta=/dashboard/aluno/aulas`}
+                        className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-red-400 transition mt-1"
+                      >
+                        <Flag className="w-3 h-3" />
+                        Relatar um problema
+                      </a>
                     )}
                   </div>
                 )}

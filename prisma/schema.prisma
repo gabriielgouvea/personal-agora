@@ -96,6 +96,8 @@ model User {
   aulaComoPersonal Aula[]  @relation("PersonalAulas")
   avaliacoesFeitas    Avaliacao[] @relation("AutorAvaliacoes")
   avaliacoesRecebidas Avaliacao[] @relation("AvaliadoAvaliacoes")
+  relatosFeitos       Relato[]   @relation("AutorRelatos")
+  relatosRecebidos    Relato[]   @relation("RelatadoRelatos")
 }
 
 model Aula {
@@ -118,6 +120,7 @@ model Aula {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   avaliacoes      Avaliacao[]
+  relatos         Relato[]
 }
 
 model Avaliacao {
@@ -182,4 +185,20 @@ model Cupom {
   mesesDesconto  Int      @default(0) // 0 = desconto único (compra avulsa), >0 = aplica em N meses de assinatura
   ativo          Boolean  @default(true)
   createdAt      DateTime @default(now())
+}
+
+model Relato {
+  id            String   @id @default(uuid())
+  aulaId        String?
+  aula          Aula?    @relation(fields: [aulaId], references: [id])
+  autorId       String
+  autor         User     @relation("AutorRelatos", fields: [autorId], references: [id])
+  relatadoId    String
+  relatado      User     @relation("RelatadoRelatos", fields: [relatadoId], references: [id])
+  categoria     String   // "nao_compareceu" | "assedio" | "comportamento_inadequado" | "atraso_excessivo" | "cobranca_indevida" | "qualidade_servico" | "discriminacao" | "outro"
+  descricao     String
+  status        String   @default("pendente") // "pendente" | "em_analise" | "resolvido" | "arquivado"
+  respostaAdmin String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }

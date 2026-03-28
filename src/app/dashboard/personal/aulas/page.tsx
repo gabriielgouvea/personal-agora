@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MessageCircle, CheckCircle2, Clock, XCircle, RefreshCw, CalendarDays, BadgeDollarSign, User, Star, Loader2 } from "lucide-react";
+import { MessageCircle, CheckCircle2, Clock, XCircle, RefreshCw, CalendarDays, BadgeDollarSign, User, Star, Loader2, Flag } from "lucide-react";
 import Link from "next/link";
 
 interface Aula {
@@ -239,6 +239,14 @@ export default function AulasPersonalPage() {
                         </div>
                       </div>
                     )}
+
+                    <a
+                      href={`/dashboard/relatar?aulaId=${aula.id}&relatadoId=${aula.aluno.id}&nome=${encodeURIComponent(aula.aluno.nome + " " + aula.aluno.sobrenome)}&volta=/dashboard/personal/aulas`}
+                      className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-red-400 transition mt-1"
+                    >
+                      <Flag className="w-3 h-3" />
+                      Relatar um problema
+                    </a>
                   </div>
                 )}
               </div>

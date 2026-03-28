@@ -24,7 +24,7 @@ export async function GET(
         },
       },
       aluno: {
-        select: { id: true },
+        select: { id: true, nome: true, sobrenome: true },
       },
     },
   });
