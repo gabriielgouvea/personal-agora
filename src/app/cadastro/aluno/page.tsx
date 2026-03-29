@@ -80,6 +80,7 @@ export default function CadastroAlunoPage() {
   const [emailDupError, setEmailDupError] = useState("");
   const [cpfError, setCpfError] = useState("");
   const [apiError, setApiError] = useState("");
+  const [aceitouTermos, setAceitouTermos] = useState(false);
   const [duplicateInfo, setDuplicateInfo] = useState<{
     field: string;
     message: string;
@@ -530,6 +531,25 @@ export default function CadastroAlunoPage() {
             </div>
           )}
 
+          {/* ── Termos e condições ── */}
+          {step === STEP_FIELDS.length - 1 && (
+            <label className="flex items-start gap-3 cursor-pointer mt-6">
+              <input
+                type="checkbox"
+                checked={aceitouTermos}
+                onChange={(e) => setAceitouTermos(e.target.checked)}
+                className="w-4 h-4 mt-0.5 rounded border-zinc-600 bg-zinc-800 text-yellow-500 focus:ring-yellow-500 focus:ring-offset-0 accent-yellow-500"
+              />
+              <span className="text-sm text-zinc-300">
+                Li e aceito os{" "}
+                <strong className="text-yellow-400">Termos e Condições</strong>{" "}
+                e a{" "}
+                <strong className="text-yellow-400">Política de Privacidade</strong>{" "}
+                da plataforma Personal Agora.
+              </span>
+            </label>
+          )}
+
           {/* ── Navegação ── */}
           <div className="flex gap-4 mt-10">
             {step > 0 && (
@@ -553,8 +573,8 @@ export default function CadastroAlunoPage() {
             ) : (
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className="flex-1 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-full transition hover:scale-[1.02] active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                disabled={isSubmitting || !aceitouTermos}
+                className="flex-1 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-full transition hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isSubmitting ? (
                   <Loader2 className="w-5 h-5 animate-spin" />

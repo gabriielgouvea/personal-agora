@@ -33,8 +33,8 @@ export async function PATCH(
     return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
   }
 
-  // Só pode cancelar aulas com status "paga" ou "aguardando_pagamento"
-  if (!["paga", "aguardando_pagamento"].includes(aula.status)) {
+  // Só pode cancelar aulas com status "paga", "aguardando_pagamento" ou "aceita"
+  if (!["paga", "aguardando_pagamento", "aceita"].includes(aula.status)) {
     return NextResponse.json(
       { error: "Esta aula não pode ser cancelada no status atual" },
       { status: 400 }
@@ -179,6 +179,21 @@ export async function PATCH(
     }
 
     // TODO: Integrar reembolso Asaas quando status era "paga"
+
+    // Notificar aluno sobre o cancelamento
+    try {
+      const { sendStatusAlteradoAluno } = await import("@/lib/email");
+      const statusFinal = aula.status === "paga" ? "reembolsada" : "cancelada";
+      await sendStatusAlteradoAluno(
+        aula.aluno.email,
+        aula.aluno.nome,
+        `${aula.personal.nome} ${aula.personal.sobrenome}`,
+        statusFinal === "reembolsada" ? "cancelada" : statusFinal,
+        aula.id,
+      );
+    } catch (e) {
+      console.error("Erro ao notificar aluno sobre cancelamento:", e);
+    }
 
     return NextResponse.json({
       ok: true,

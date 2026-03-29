@@ -22,7 +22,7 @@ export async function PATCH(
   if (aula.alunoId !== session.userId) {
     return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
   }
-  if (aula.status !== "paga") {
+  if (aula.status !== "paga" && aula.status !== "aceita") {
     return NextResponse.json({ error: "Aula não pode ser confirmada neste status" }, { status: 400 });
   }
 
@@ -38,14 +38,23 @@ export async function PATCH(
 
   // Notificar admin sobre liberação de pagamento (importação inline para evitar circular)
   try {
-    const { sendAulaConfirmadaAdmin } = await import("@/lib/email");
-    await sendAulaConfirmadaAdmin(
-      `${aula.aluno.nome} ${aula.aluno.sobrenome}`,
-      aula.personal.nome,
-      aula.personal.email,
-      aula.valor,
-      aula.id,
-    );
+    const { sendAulaConfirmadaAdmin, sendStatusAlteradoAluno } = await import("@/lib/email");
+    await Promise.all([
+      sendAulaConfirmadaAdmin(
+        `${aula.aluno.nome} ${aula.aluno.sobrenome}`,
+        aula.personal.nome,
+        aula.personal.email,
+        aula.valor,
+        aula.id,
+      ),
+      sendStatusAlteradoAluno(
+        aula.aluno.email,
+        aula.aluno.nome,
+        `${aula.personal.nome} ${aula.personal.sobrenome}`,
+        "confirmada",
+        aula.id,
+      ),
+    ]);
   } catch (e) {
     console.error("Erro ao enviar email de liberação:", e);
   }

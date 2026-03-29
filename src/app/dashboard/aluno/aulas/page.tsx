@@ -24,7 +24,8 @@ interface Aula {
 
 const STATUS_LABELS: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   aguardando_pagamento: { label: "Aguardando pagamento", color: "text-yellow-500 bg-yellow-500/10 border-yellow-500/30", icon: Clock },
-  paga: { label: "Paga — aguardando confirmação", color: "text-blue-400 bg-blue-500/10 border-blue-500/30", icon: CheckCircle2 },
+  paga: { label: "Paga — aguardando aceitação do personal", color: "text-orange-400 bg-orange-500/10 border-orange-500/30", icon: Clock },
+  aceita: { label: "Personal aceitou — aguardando aula", color: "text-blue-400 bg-blue-500/10 border-blue-500/30", icon: CheckCircle2 },
   confirmada: { label: "Confirmada ✓", color: "text-green-400 bg-green-500/10 border-green-500/30", icon: CheckCircle2 },
   cancelada: { label: "Cancelada", color: "text-red-400 bg-red-500/10 border-red-500/30", icon: XCircle },
   reembolsada: { label: "Reembolsada", color: "text-zinc-400 bg-zinc-800 border-zinc-700", icon: RefreshCw },
@@ -173,7 +174,7 @@ export default function MinhasAulasPage() {
                 </div>
 
                 {/* Actions */}
-                {(aula.status === "aguardando_pagamento" || aula.status === "paga" || aula.status === "confirmada") && (
+                {(aula.status === "aguardando_pagamento" || aula.status === "paga" || aula.status === "aceita" || aula.status === "confirmada") && (
                   <div className="border-t border-zinc-800 px-5 py-4 flex flex-col gap-3">
                     <div className="flex flex-wrap gap-3">
                     {aula.status === "aguardando_pagamento" && aula.paymentUrl && (
@@ -186,7 +187,7 @@ export default function MinhasAulasPage() {
                         Pagar agora
                       </a>
                     )}
-                    {aula.status === "paga" && (
+                    {(aula.status === "paga" || aula.status === "aceita") && (
                       <button
                         onClick={() => confirmarAula(aula.id)}
                         disabled={confirming === aula.id}
@@ -200,7 +201,7 @@ export default function MinhasAulasPage() {
                         Aula realizada — confirmar
                       </button>
                     )}
-                    {(aula.status === "paga" || aula.status === "confirmada") && whatsappUrl && (
+                    {(aula.status === "paga" || aula.status === "aceita" || aula.status === "confirmada") && whatsappUrl && (
                       <a
                         href={whatsappUrl}
                         target="_blank"
@@ -226,7 +227,7 @@ export default function MinhasAulasPage() {
                         Avaliado
                       </span>
                     )}
-                    {(aula.status === "aguardando_pagamento" || aula.status === "paga") && (
+                    {(aula.status === "aguardando_pagamento" || aula.status === "paga" || aula.status === "aceita") && (
                       <button
                         onClick={() => cancelarAula(aula.id)}
                         disabled={cancelando === aula.id}
@@ -307,9 +308,15 @@ export default function MinhasAulasPage() {
                     )}
 
                     {aula.status === "paga" && (
+                      <div className="flex items-start gap-2 p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl text-orange-300 text-xs">
+                        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                        Aguardando o personal aceitar a aula. Você será notificado por e-mail quando ele confirmar.
+                      </div>
+                    )}
+                    {aula.status === "aceita" && (
                       <div className="flex items-start gap-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-300 text-xs">
                         <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                        Clique em "Aula realizada" após a aula ocorrer para liberar o pagamento ao personal. Em caso de não comparecimento, entre em contato com o suporte.
+                        O personal aceitou! Após a aula ser realizada, clique em &quot;Aula realizada&quot; para liberar o pagamento. Em caso de não comparecimento, entre em contato com o suporte.
                       </div>
                     )}
 

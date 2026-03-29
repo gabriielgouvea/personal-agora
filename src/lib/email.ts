@@ -50,11 +50,11 @@ export async function sendAulaConfirmadaAluno(
   await transporter.sendMail({
     from: `"Personal Agora" <${process.env.GMAIL_USER}>`,
     to: emailAluno,
-    subject: "Pagamento confirmado — sua aula foi reservada! 🎉",
+    subject: "Compra concluída — aguardando confirmação do personal! 🎉",
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#fff">
         <h2 style="margin:0 0 4px;color:#111">Olá, ${nomeAluno}!</h2>
-        <p style="color:#555;margin:0 0 20px">Seu pagamento foi confirmado com sucesso. Sua aula com <strong>${nomePersonal}</strong> está reservada.</p>
+        <p style="color:#555;margin:0 0 20px">Sua compra foi concluída com sucesso! O personal <strong>${nomePersonal}</strong> foi notificado e estamos aguardando a confirmação do agendamento.</p>
         <div style="background:#f9f9f9;border-radius:12px;padding:20px;margin-bottom:24px">
           <p style="margin:0 0 8px;color:#333;font-size:14px"><strong>Detalhes da reserva:</strong></p>
           <p style="margin:0 0 4px;color:#555;font-size:14px">Personal: <strong>${nomePersonal}</strong></p>
@@ -62,10 +62,10 @@ export async function sendAulaConfirmadaAluno(
           <p style="margin:0;color:#555;font-size:14px">ID da reserva: <code style="font-size:12px;color:#888">${aulaId}</code></p>
         </div>
         <div style="background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:16px;margin-bottom:24px">
-          <p style="margin:0;color:#713f12;font-size:13px">⚠️ <strong>Importante:</strong> Após realizar a aula, confirme no seu painel para que o pagamento seja liberado ao personal. Se o personal não comparecer, você pode solicitar reembolso.</p>
+          <p style="margin:0;color:#713f12;font-size:13px">⏳ <strong>Próximo passo:</strong> O personal precisa aceitar a aula. Você receberá um e-mail assim que ele confirmar. Acompanhe o status na aba "Minhas Aulas".</p>
         </div>
         <a href="${dashboardUrl}" style="display:inline-block;padding:12px 28px;background:#eab308;color:#000;text-decoration:none;border-radius:8px;font-weight:700">
-          Ver minha aula
+          Acompanhar minha aula
         </a>
         <hr style="border:none;border-top:1px solid #eee;margin:24px 0"/>
         <p style="color:#aaa;font-size:12px">Personal Agora &mdash; plataforma de personal trainers</p>
@@ -96,11 +96,14 @@ export async function sendAulaConfirmadaPersonal(
           <p style="margin:0 0 4px;color:#555;font-size:14px">Valor: <strong>R$ ${valor.toFixed(2).replace(".", ",")}</strong></p>
           <p style="margin:0;color:#555;font-size:14px">ID da reserva: <code style="font-size:12px;color:#888">${aulaId}</code></p>
         </div>
-        <div style="background:#dcfce7;border:1px solid #86efac;border-radius:10px;padding:16px;margin-bottom:24px">
-          <p style="margin:0;color:#14532d;font-size:13px">💰 O pagamento fica retido até o aluno confirmar a realização da aula. Após a confirmação, você receberá o valor.</p>
+        <div style="background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:16px;margin-bottom:24px">
+          <p style="margin:0;color:#713f12;font-size:13px">⚠️ <strong>Ação necessária:</strong> Acesse a plataforma e <strong>aceite a aula</strong> para confirmar o agendamento. O aluno está aguardando sua confirmação.</p>
+        </div>
+        <div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:10px;padding:16px;margin-bottom:24px">
+          <p style="margin:0;color:#7f1d1d;font-size:13px">🚨 <strong>Atenção:</strong> Cancelamentos com menos de 12h geram advertência. Acumular 3 advertências em 30 dias resulta em suspensão da conta. Mantenha sua reputação!</p>
         </div>
         <a href="${dashboardUrl}" style="display:inline-block;padding:12px 28px;background:#eab308;color:#000;text-decoration:none;border-radius:8px;font-weight:700">
-          Ver minhas aulas
+          Aceitar aula agora
         </a>
         <hr style="border:none;border-top:1px solid #eee;margin:24px 0"/>
         <p style="color:#aaa;font-size:12px">Personal Agora &mdash; plataforma de personal trainers</p>
@@ -132,6 +135,89 @@ export async function sendAulaConfirmadaAdmin(
           <tr><td style="padding:6px 0;color:#555">ID Aula:</td><td style="color:#888;font-size:12px">${aulaId}</td></tr>
         </table>
         <p style="margin-top:20px;color:#888;font-size:12px">Personal Agora &mdash; notificação automática</p>
+      </div>
+    `,
+  });
+}
+
+export async function sendAulaAceitaAluno(
+  emailAluno: string,
+  nomeAluno: string,
+  nomePersonal: string,
+  valor: number,
+  aulaId: string
+) {
+  const dashboardUrl = `${APP_URL}/dashboard/aluno/aulas`;
+  await transporter.sendMail({
+    from: `"Personal Agora" <${process.env.GMAIL_USER}>`,
+    to: emailAluno,
+    subject: `${nomePersonal} aceitou sua aula! ✅`,
+    html: `
+      <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#fff">
+        <h2 style="margin:0 0 4px;color:#111">Olá, ${nomeAluno}!</h2>
+        <p style="color:#555;margin:0 0 20px">Ótima notícia! O personal <strong>${nomePersonal}</strong> aceitou sua aula. O agendamento está confirmado!</p>
+        <div style="background:#f9f9f9;border-radius:12px;padding:20px;margin-bottom:24px">
+          <p style="margin:0 0 8px;color:#333;font-size:14px"><strong>Detalhes:</strong></p>
+          <p style="margin:0 0 4px;color:#555;font-size:14px">Personal: <strong>${nomePersonal}</strong></p>
+          <p style="margin:0 0 4px;color:#555;font-size:14px">Valor: <strong>R$ ${valor.toFixed(2).replace(".", ",")}</strong></p>
+          <p style="margin:0;color:#555;font-size:14px">ID: <code style="font-size:12px;color:#888">${aulaId}</code></p>
+        </div>
+        <div style="background:#dcfce7;border:1px solid #86efac;border-radius:10px;padding:16px;margin-bottom:24px">
+          <p style="margin:0;color:#14532d;font-size:13px">✅ <strong>Próximo passo:</strong> Após a aula ser realizada, confirme no seu painel clicando em "Aula realizada" para liberar o pagamento ao personal.</p>
+        </div>
+        <a href="${dashboardUrl}" style="display:inline-block;padding:12px 28px;background:#eab308;color:#000;text-decoration:none;border-radius:8px;font-weight:700">
+          Ver minha aula
+        </a>
+        <hr style="border:none;border-top:1px solid #eee;margin:24px 0"/>
+        <p style="color:#aaa;font-size:12px">Personal Agora &mdash; plataforma de personal trainers</p>
+      </div>
+    `,
+  });
+}
+
+export async function sendStatusAlteradoAluno(
+  emailAluno: string,
+  nomeAluno: string,
+  nomePersonal: string,
+  novoStatus: string,
+  aulaId: string
+) {
+  const dashboardUrl = `${APP_URL}/dashboard/aluno/aulas`;
+
+  const statusMap: Record<string, { subject: string; msg: string }> = {
+    cancelada: {
+      subject: `Aula cancelada — ${nomePersonal}`,
+      msg: `Sua aula com <strong>${nomePersonal}</strong> foi cancelada. Verifique os detalhes no seu painel.`,
+    },
+    reembolsada: {
+      subject: `Reembolso processado — aula com ${nomePersonal}`,
+      msg: `O reembolso da sua aula com <strong>${nomePersonal}</strong> foi processado. O valor será devolvido em breve.`,
+    },
+    confirmada: {
+      subject: `Aula confirmada — pagamento liberado! ✅`,
+      msg: `Sua confirmação de aula com <strong>${nomePersonal}</strong> foi registrada e o pagamento foi liberado ao personal.`,
+    },
+  };
+
+  const info = statusMap[novoStatus];
+  if (!info) return;
+
+  await transporter.sendMail({
+    from: `"Personal Agora" <${process.env.GMAIL_USER}>`,
+    to: emailAluno,
+    subject: info.subject,
+    html: `
+      <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#fff">
+        <h2 style="margin:0 0 4px;color:#111">Olá, ${nomeAluno}!</h2>
+        <p style="color:#555;margin:0 0 20px">${info.msg}</p>
+        <div style="background:#f9f9f9;border-radius:12px;padding:20px;margin-bottom:24px">
+          <p style="margin:0;color:#555;font-size:14px">ID da reserva: <code style="font-size:12px;color:#888">${aulaId}</code></p>
+        </div>
+        <a href="${dashboardUrl}" style="display:inline-block;padding:12px 28px;background:#eab308;color:#000;text-decoration:none;border-radius:8px;font-weight:700">
+          Ver minhas aulas
+        </a>
+        <hr style="border:none;border-top:1px solid #eee;margin:24px 0"/>
+        <p style="color:#aaa;font-size:12px">Personal Agora &mdash; plataforma de personal trainers</p>
       </div>
     `,
   });

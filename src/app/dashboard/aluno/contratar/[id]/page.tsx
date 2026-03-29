@@ -122,6 +122,9 @@ export default function ContratarPage() {
     aulaId: string;
   } | null>(null);
 
+  // Aceite da política de cancelamento
+  const [aceitouPolitica, setAceitouPolitica] = useState(false);
+
   // Cupom state
   const [showCupom, setShowCupom] = useState(false);
   const [cupomInput, setCupomInput] = useState("");
@@ -882,10 +885,22 @@ export default function ContratarPage() {
               <p>• Em caso de força maior (doença, acidente), entre em contato com o suporte com comprovante para análise.</p>
             </div>
 
+            <label className="flex items-start gap-3 cursor-pointer mt-4">
+              <input
+                type="checkbox"
+                checked={aceitouPolitica}
+                onChange={(e) => setAceitouPolitica(e.target.checked)}
+                className="w-4 h-4 mt-0.5 rounded border-zinc-600 bg-zinc-800 text-yellow-500 focus:ring-yellow-500 focus:ring-offset-0 accent-yellow-500"
+              />
+              <span className="text-sm text-zinc-300">
+                Li e aceito a <strong className="text-yellow-400">política de cancelamento</strong> e os termos de uso da plataforma.
+              </span>
+            </label>
+
             <button
               onClick={handleContratar}
-              disabled={contratando}
-              className="mt-5 w-full py-4 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-60 text-black font-black text-lg rounded-xl transition flex items-center justify-center gap-2"
+              disabled={contratando || !aceitouPolitica}
+              className="mt-5 w-full py-4 bg-yellow-500 hover:bg-yellow-400 disabled:opacity-60 disabled:cursor-not-allowed text-black font-black text-lg rounded-xl transition flex items-center justify-center gap-2"
             >
               {contratando ? (
                 <>

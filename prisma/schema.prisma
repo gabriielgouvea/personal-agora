@@ -118,10 +118,11 @@ model Aula {
   aluno           User     @relation("AlunoAulas", fields: [alunoId], references: [id])
   personal        User     @relation("PersonalAulas", fields: [personalId], references: [id])
   valor           Float
-  // "aguardando_pagamento" | "paga" | "confirmada" | "cancelada" | "reembolsada"
+  // "aguardando_pagamento" | "paga" | "aceita" | "confirmada" | "cancelada" | "reembolsada"
   status          String   @default("aguardando_pagamento")
   formaPagamento  String?  // "PIX" | "CREDIT_CARD" | "BOLETO"
   paidAt          DateTime? // data/hora do pagamento confirmado
+  aceitaPersonalAt DateTime? // data/hora que o personal aceitou a aula
   asaasChargeId   String?
   asaasSubscriptionId String?  // assinatura recorrente Asaas
   paymentUrl      String?
