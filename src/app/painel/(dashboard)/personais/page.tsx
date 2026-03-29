@@ -43,6 +43,7 @@ interface PersonalDetail {
   tipoChavePix: string | null;
   chavePix: string | null;
   createdAt: string;
+  advertencias?: { id: string; tipo: string; descricao: string; pontos: number; createdAt: string }[];
 }
 
 function StatusBadge({ status }: { status: string }) {
