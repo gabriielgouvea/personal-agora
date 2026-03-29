@@ -108,6 +108,7 @@ model User {
   relatosFeitos       Relato[]   @relation("AutorRelatos")
   relatosRecebidos    Relato[]   @relation("RelatadoRelatos")
   saques              Saque[]    @relation("SaquesPersonal")
+  advertencias        Advertencia[]
 }
 
 model Aula {
@@ -127,6 +128,10 @@ model Aula {
   scheduledAt     DateTime?
   confirmedAt     DateTime?  // aluno confirmou a realização da aula
   releasedAt      DateTime?  // pagamento liberado ao personal
+  canceladoPor    String?    // "aluno" | "personal" | "admin"
+  canceladoEm     DateTime?
+  motivoCancelamento String?
+  cancelamentoTardio Boolean @default(false) // true se cancelou com menos de 12h
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   avaliacoes      Avaliacao[]
@@ -197,6 +202,17 @@ model Cupom {
   mesesDesconto  Int      @default(0) // 0 = desconto único (compra avulsa), >0 = aplica em N meses de assinatura
   ativo          Boolean  @default(true)
   createdAt      DateTime @default(now())
+}
+
+model Advertencia {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  aulaId      String?
+  tipo        String   // "cancelamento_tardio" | "nao_comparecimento" | "conduta"
+  descricao   String
+  pontos      Int      @default(1) // pontos de penalidade
+  createdAt   DateTime @default(now())
 }
 
 model Relato {

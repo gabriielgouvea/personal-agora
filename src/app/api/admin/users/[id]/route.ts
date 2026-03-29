@@ -9,7 +9,14 @@ export async function GET(
   const session = await getAdminSession();
   if (!session) return NextResponse.json(null, { status: 401 });
 
-  const user = await prisma.user.findUnique({ where: { id: params.id } });
+  const user = await prisma.user.findUnique({
+    where: { id: params.id },
+    include: {
+      advertencias: {
+        orderBy: { createdAt: "desc" },
+      },
+    },
+  });
   if (!user) return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
 
   return NextResponse.json(user);

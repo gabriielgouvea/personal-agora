@@ -874,6 +874,14 @@ export default function ContratarPage() {
               </div>
             )}
 
+            {/* Política de cancelamento */}
+            <div className="mt-4 p-4 bg-zinc-800/60 border border-zinc-700 rounded-xl text-xs text-zinc-400 space-y-1">
+              <p className="font-semibold text-zinc-300 text-sm mb-1">📋 Política de cancelamento</p>
+              <p>• Cancele ou remarque <strong className="text-white">até 12h antes</strong> da aula sem custo.</p>
+              <p>• Cancelamentos com <strong className="text-red-400">menos de 12h</strong> de antecedência são considerados aula realizada e <strong className="text-red-400">não geram reembolso</strong>.</p>
+              <p>• Em caso de força maior (doença, acidente), entre em contato com o suporte com comprovante para análise.</p>
+            </div>
+
             <button
               onClick={handleContratar}
               disabled={contratando}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MessageCircle, CheckCircle2, Clock, XCircle, RefreshCw, CalendarDays, BadgeDollarSign, User, Star, Loader2, Flag } from "lucide-react";
+import { MessageCircle, CheckCircle2, Clock, XCircle, RefreshCw, CalendarDays, BadgeDollarSign, User, Star, Loader2, Flag, AlertCircle } from "lucide-react";
 import Link from "next/link";
 
 interface Aula {
@@ -38,6 +38,8 @@ export default function AulasPersonalPage() {
   const [hoverNota, setHoverNota] = useState(0);
   const [comentario, setComentario] = useState("");
   const [enviandoAvaliacao, setEnviandoAvaliacao] = useState(false);
+  const [cancelando, setCancelando] = useState<string | null>(null);
+  const [cancelMsg, setCancelMsg] = useState<{ id: string; msg: string; tipo: "ok" | "aviso" | "suspensao" } | null>(null);
 
   useEffect(() => {
     fetch("/api/aulas")
@@ -61,6 +63,32 @@ export default function AulasPersonalPage() {
       setComentario("");
     }
     setEnviandoAvaliacao(false);
+  }
+
+  async function cancelarAula(aulaId: string) {
+    if (!confirm("Tem certeza que deseja cancelar esta aula? Se faltar menos de 12h, voc\u00ea receber\u00e1 uma advert\u00eancia.")) return;
+    setCancelando(aulaId);
+    try {
+      const res = await fetch(`/api/aulas/${aulaId}/cancelar`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAulas((prev) =>
+          prev.map((a) => (a.id === aulaId ? { ...a, status: data.status } : a))
+        );
+        setCancelMsg({
+          id: aulaId,
+          msg: data.mensagem,
+          tipo: data.suspenso ? "suspensao" : data.tardio ? "aviso" : "ok",
+        });
+      }
+    } catch {
+      setCancelMsg({ id: aulaId, msg: "Erro ao cancelar. Tente novamente.", tipo: "aviso" });
+    }
+    setCancelando(null);
   }
 
   const totalPago = aulas
@@ -193,7 +221,34 @@ export default function AulasPersonalPage() {
                         Avaliado
                       </span>
                     )}
+                    {aula.status === "paga" && (
+                      <button
+                        onClick={() => cancelarAula(aula.id)}
+                        disabled={cancelando === aula.id}
+                        className="px-4 py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400 text-sm font-semibold rounded-xl transition flex items-center gap-2 disabled:opacity-60"
+                      >
+                        {cancelando === aula.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <XCircle className="w-4 h-4" />
+                        )}
+                        Cancelar aula
+                      </button>
+                    )}
                     </div>
+
+                    {cancelMsg && cancelMsg.id === aula.id && (
+                      <div className={`p-3 rounded-xl text-sm flex items-start gap-2 ${
+                        cancelMsg.tipo === "suspensao"
+                          ? "bg-red-500/10 border border-red-500/30 text-red-300"
+                          : cancelMsg.tipo === "aviso"
+                            ? "bg-yellow-500/10 border border-yellow-500/30 text-yellow-300"
+                            : "bg-green-500/10 border border-green-500/30 text-green-300"
+                      }`}>
+                        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                        {cancelMsg.msg}
+                      </div>
+                    )}
 
                     {/* Formulário de avaliação inline */}
                     {avaliarAulaId === aula.id && (

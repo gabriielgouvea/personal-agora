@@ -711,6 +711,9 @@ function CadastroPersonalContent() {
                     <p className="text-green-400 text-sm font-medium flex items-center gap-2">
                       <Check className="w-4 h-4" /> Convite encontrado! 2 meses grátis no Plano Pro.
                     </p>
+                    <p className="text-zinc-400 text-xs mt-2">
+                      Pode usar sem medo: ao final do teste sua assinatura é cancelada automaticamente. Sem cobranças surpresa. Se curtir, você escolhe se quer continuar.
+                    </p>
                     <button
                       type="button"
                       onClick={() => {

@@ -610,6 +610,25 @@ export default function PersonaisPage() {
                         </a>
                       )}
 
+                      {/* ── Advertências ── */}
+                      {detail.advertencias && detail.advertencias.length > 0 && (
+                        <div className="border-t border-zinc-800 pt-3">
+                          <p className="text-xs font-semibold text-red-400 mb-2 flex items-center gap-1.5">
+                            ⚠️ Advertências ({detail.advertencias.length})
+                          </p>
+                          <div className="space-y-2 max-h-40 overflow-y-auto">
+                            {detail.advertencias.map((adv: { id: string; tipo: string; descricao: string; pontos: number; createdAt: string }) => (
+                              <div key={adv.id} className="bg-red-500/5 border border-red-500/20 rounded-lg p-2.5">
+                                <p className="text-xs text-red-300">{adv.descricao}</p>
+                                <p className="text-[10px] text-zinc-500 mt-1">
+                                  {new Date(adv.createdAt).toLocaleDateString("pt-BR")} — {adv.pontos} ponto(s)
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {/* ── Redefinição de senha ── */}
                       <div className="border-t border-zinc-800 pt-3">
                         {!resetLink ? (

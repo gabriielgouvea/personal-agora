@@ -34,6 +34,8 @@ export default function MinhasAulasPage() {
   const [aulas, setAulas] = useState<Aula[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirming, setConfirming] = useState<string | null>(null);
+  const [cancelando, setCancelando] = useState<string | null>(null);
+  const [cancelMsg, setCancelMsg] = useState<{ id: string; msg: string; tipo: "ok" | "aviso" } | null>(null);
   const [avaliarAulaId, setAvaliarAulaId] = useState<string | null>(null);
   const [nota, setNota] = useState(0);
   const [hoverNota, setHoverNota] = useState(0);
@@ -47,6 +49,36 @@ export default function MinhasAulasPage() {
   }
 
   useEffect(() => { fetchAulas(); }, []);
+
+  async function cancelarAula(aulaId: string) {
+    const aula = aulas.find((a) => a.id === aulaId);
+    const msg = aula?.status === "paga"
+      ? "Tem certeza? Se faltar menos de 12h para a aula, ela será considerada realizada e não haverá reembolso."
+      : "Deseja cancelar esta aula?";
+    if (!confirm(msg)) return;
+    setCancelando(aulaId);
+    try {
+      const res = await fetch(`/api/aulas/${aulaId}/cancelar`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAulas((prev) =>
+          prev.map((a) => (a.id === aulaId ? { ...a, status: data.status } : a))
+        );
+        setCancelMsg({
+          id: aulaId,
+          msg: data.mensagem,
+          tipo: data.tardio ? "aviso" : "ok",
+        });
+      }
+    } catch {
+      setCancelMsg({ id: aulaId, msg: "Erro ao cancelar. Tente novamente.", tipo: "aviso" });
+    }
+    setCancelando(null);
+  }
 
   async function confirmarAula(aulaId: string) {
     if (!confirm("Confirmar que a aula foi realizada? O pagamento será liberado ao personal.")) return;
@@ -194,7 +226,32 @@ export default function MinhasAulasPage() {
                         Avaliado
                       </span>
                     )}
+                    {(aula.status === "aguardando_pagamento" || aula.status === "paga") && (
+                      <button
+                        onClick={() => cancelarAula(aula.id)}
+                        disabled={cancelando === aula.id}
+                        className="px-4 py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400 text-sm font-semibold rounded-xl transition flex items-center gap-2 disabled:opacity-60"
+                      >
+                        {cancelando === aula.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <XCircle className="w-4 h-4" />
+                        )}
+                        Cancelar aula
+                      </button>
+                    )}
                     </div>
+
+                    {cancelMsg && cancelMsg.id === aula.id && (
+                      <div className={`p-3 rounded-xl text-sm flex items-start gap-2 ${
+                        cancelMsg.tipo === "aviso"
+                          ? "bg-yellow-500/10 border border-yellow-500/30 text-yellow-300"
+                          : "bg-green-500/10 border border-green-500/30 text-green-300"
+                      }`}>
+                        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                        {cancelMsg.msg}
+                      </div>
+                    )}
 
                     <a
                       href={`/dashboard/relatar?aulaId=${aula.id}&relatadoId=${aula.personal.id}&nome=${encodeURIComponent(aula.personal.nome + " " + aula.personal.sobrenome)}&volta=/dashboard/aluno/aulas`}
