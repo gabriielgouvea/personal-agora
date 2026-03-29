@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { refundAsaasPayment } from "@/lib/asaas";
 
 const LIMITE_HORAS_CANCELAMENTO = 12;
 const MAX_ADVERTENCIAS_30_DIAS = 3;
@@ -53,7 +54,7 @@ export async function PATCH(
 
   // ── Regras para ALUNO ──
   if (isAluno) {
-    if (aula.status === "paga" && cancelamentoTardio) {
+    if (["paga", "aceita"].includes(aula.status) && cancelamentoTardio) {
       // Cancelamento tardio do aluno: aula é considerada como dada, sem reembolso
       await prisma.aula.update({
         where: { id: params.id },
@@ -78,10 +79,11 @@ export async function PATCH(
     }
 
     // Cancelamento dentro do prazo: cancela e reembolsa
+    const statusPago = ["paga", "aceita"].includes(aula.status);
     await prisma.aula.update({
       where: { id: params.id },
       data: {
-        status: aula.status === "paga" ? "reembolsada" : "cancelada",
+        status: statusPago ? "reembolsada" : "cancelada",
         canceladoPor,
         canceladoEm: agora,
         motivoCancelamento: motivo || "Cancelamento pelo aluno",
@@ -89,14 +91,41 @@ export async function PATCH(
       },
     });
 
-    // TODO: Integrar reembolso Asaas quando status era "paga"
+    // Reembolso automático via Asaas
+    if (statusPago && aula.asaasChargeId) {
+      try {
+        await refundAsaasPayment(
+          aula.asaasChargeId,
+          undefined,
+          `Cancelamento pelo aluno — aula ${aula.id}`,
+        );
+      } catch (e) {
+        console.error("Erro ao processar reembolso Asaas (aluno):", e);
+      }
+    }
+
+    // Notificar aluno sobre o reembolso
+    if (statusPago) {
+      try {
+        const { sendStatusAlteradoAluno } = await import("@/lib/email");
+        await sendStatusAlteradoAluno(
+          aula.aluno.email,
+          aula.aluno.nome,
+          `${aula.personal.nome} ${aula.personal.sobrenome}`,
+          "reembolsada",
+          aula.id,
+        );
+      } catch (e) {
+        console.error("Erro ao notificar aluno sobre reembolso:", e);
+      }
+    }
 
     return NextResponse.json({
       ok: true,
-      status: aula.status === "paga" ? "reembolsada" : "cancelada",
+      status: statusPago ? "reembolsada" : "cancelada",
       tardio: false,
-      mensagem: aula.status === "paga"
-        ? "Aula cancelada com sucesso. O reembolso será processado."
+      mensagem: statusPago
+        ? "Aula cancelada com sucesso. O reembolso será processado automaticamente."
         : "Aula cancelada com sucesso.",
     });
   }
@@ -104,16 +133,30 @@ export async function PATCH(
   // ── Regras para PERSONAL ──
   if (isPersonal) {
     // Cancelamento do personal: sempre reembolsa o aluno
+    const statusPago = ["paga", "aceita"].includes(aula.status);
     await prisma.aula.update({
       where: { id: params.id },
       data: {
-        status: aula.status === "paga" ? "reembolsada" : "cancelada",
+        status: statusPago ? "reembolsada" : "cancelada",
         canceladoPor,
         canceladoEm: agora,
         motivoCancelamento: motivo || "Cancelamento pelo personal",
         cancelamentoTardio,
       },
     });
+
+    // Reembolso automático via Asaas
+    if (statusPago && aula.asaasChargeId) {
+      try {
+        await refundAsaasPayment(
+          aula.asaasChargeId,
+          undefined,
+          `Cancelamento pelo personal — aula ${aula.id}`,
+        );
+      } catch (e) {
+        console.error("Erro ao processar reembolso Asaas (personal):", e);
+      }
+    }
 
     // Se cancelamento tardio, registrar advertência
     if (cancelamentoTardio) {
@@ -170,7 +213,7 @@ export async function PATCH(
 
       return NextResponse.json({
         ok: true,
-        status: aula.status === "paga" ? "reembolsada" : "cancelada",
+        status: statusPago ? "reembolsada" : "cancelada",
         tardio: true,
         advertencia: true,
         totalAdvertencias,
@@ -178,17 +221,14 @@ export async function PATCH(
       });
     }
 
-    // TODO: Integrar reembolso Asaas quando status era "paga"
-
     // Notificar aluno sobre o cancelamento
     try {
       const { sendStatusAlteradoAluno } = await import("@/lib/email");
-      const statusFinal = aula.status === "paga" ? "reembolsada" : "cancelada";
       await sendStatusAlteradoAluno(
         aula.aluno.email,
         aula.aluno.nome,
         `${aula.personal.nome} ${aula.personal.sobrenome}`,
-        statusFinal === "reembolsada" ? "cancelada" : statusFinal,
+        statusPago ? "reembolsada" : "cancelada",
         aula.id,
       );
     } catch (e) {
@@ -197,10 +237,10 @@ export async function PATCH(
 
     return NextResponse.json({
       ok: true,
-      status: aula.status === "paga" ? "reembolsada" : "cancelada",
+      status: statusPago ? "reembolsada" : "cancelada",
       tardio: false,
-      mensagem: aula.status === "paga"
-        ? "Aula cancelada. O aluno receberá o reembolso."
+      mensagem: statusPago
+        ? "Aula cancelada. O reembolso será processado automaticamente."
         : "Aula cancelada com sucesso.",
     });
   }

@@ -154,6 +154,29 @@ export async function cancelAsaasSubscription(subscriptionId: string): Promise<v
   await asaasReq<{ deleted: boolean }>(`/subscriptions/${subscriptionId}`, "DELETE");
 }
 
+/**
+ * Estorna (reembolsa) um pagamento no Asaas.
+ * - Reembolso total se `value` não for informado.
+ * - Reembolso parcial se `value` < valor original.
+ * Funciona para PIX e cartão de crédito.
+ */
+export async function refundAsaasPayment(
+  paymentId: string,
+  value?: number,
+  description?: string
+): Promise<{ status: string; refundedValue: number }> {
+  const body: Record<string, unknown> = {};
+  if (value !== undefined) body.value = value;
+  if (description) body.description = description;
+
+  const result = await asaasReq<{ status: string; value: number }>(
+    `/payments/${paymentId}/refund`,
+    "POST",
+    Object.keys(body).length > 0 ? body : undefined,
+  );
+  return { status: result.status, refundedValue: result.value };
+}
+
 export interface PixQrCode {
   encodedImage: string; // base64 da imagem do QR Code
   payload: string;      // código Pix Copia e Cola
